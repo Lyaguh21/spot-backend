@@ -69,18 +69,43 @@ export class UsersService {
     return user;
   }
 
-  async findById(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: this.userProfileSelect,
-    });
+// async findById(id: string) {
+//   const user =
+//     await this.prisma.user.findUnique({
+//       where: { id },
+//       include: {
+//         coupleMember: {
+//           include: {
+//             couple: true,
+//           },
+//         },
+//       },
+//     });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+//   if (!user) {
+//     throw new NotFoundException(
+//       'User not found',
+//     );
+//   }
 
-    return user;
+//   return user;
+// }
+
+async findById(id: string) {
+  const user = await this.prisma.user.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundException(
+      'User not found',
+    );
   }
+
+  return user;
+}
 
   async getUserVisits(username: string, query: GetUserVisitsDto) {
     const user = await this.prisma.user.findUnique({
@@ -93,6 +118,8 @@ export class UsersService {
       throw new NotFoundException();
     }
 
+    return true
+
     // return this.prisma.visit.findMany({
     //   where: {
     //     userId: user.id,
@@ -104,5 +131,7 @@ export class UsersService {
     //   },
     // });
   }
+
+
 
 }

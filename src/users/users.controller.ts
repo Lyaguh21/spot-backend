@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -11,6 +11,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { AuthUser } from 'src/auth/types/auth-user.type';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
+import { GetUserVisitsDto } from './dto/get-user-visits.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('accessToken')
@@ -27,7 +28,6 @@ export class UsersController {
 
   @ApiOperation({ summary: 'Обновить мой профиль' })
   @ApiBody({ type: UpdateUserDto })
-  // @ApiOkResponse({ type: UserProfileResponseDto })
   @Patch('me')
   updateMe(@CurrentUser() user: AuthUser, @Body() dto: UpdateUserDto) {
     return this.users.updateMe(String(user.id), dto);
@@ -35,9 +35,23 @@ export class UsersController {
 
   @ApiOperation({ summary: 'Получить пользователя по username' })
   @ApiParam({ name: 'username', example: 'alex' })
-  // @ApiOkResponse({ type: UserProfileResponseDto })
   @Get(':username')
   findByUsername(@Param('username') username: string) {
     return this.users.findByUsername(username);
+  }
+
+  @Get('id/:id')
+  findById(@Param('id') id: string) {
+    return this.users.findById(id);
+  }
+
+  @ApiOperation({ summary: 'Получить посещения пользователя' })
+  @ApiOkResponse({ description: 'Список посещений пользователя' })
+  @Get(':username/visits')
+  getUserVisits(
+    @Param('username') username: string,
+    @Query() query: GetUserVisitsDto,
+  ) {
+    return this.users.getUserVisits(username, query);
   }
 }
