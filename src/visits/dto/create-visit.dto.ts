@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Visibility } from '@prisma/client';
+import { OwnerType } from '@prisma/client';
 import {
     IsBoolean,
     IsDateString,
@@ -44,6 +45,14 @@ export class CreateVisitDto {
 
     // Visit
 
+    @IsEnum(OwnerType)
+    ownerType!: OwnerType;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    coupleId?: string;
+
     @ApiPropertyOptional({ example: 'Хорошее место для прогулок' })
     @IsOptional()
     @IsString()
@@ -52,7 +61,7 @@ export class CreateVisitDto {
     @ApiProperty({ example: 5, minimum: 1, maximum: 5 })
     @Min(1)
     @Max(5)
-    rating!: number;
+    rating?: number;
 
     @ApiProperty({ example: true })
     @IsBoolean()

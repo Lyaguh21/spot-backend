@@ -27,18 +27,73 @@ export class UsersService {
     });
   }
 
-  async getMe(userId: string) {
+  async getMe(id: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: this.userProfileSelect,
+      where: { id },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+        bio: true,
+        visibility: true,
+      
+        coupleMembers: {
+          select: {
+            couple: {
+              select: {
+                id: true,
+                members: {
+                  select: {
+                    user: {
+                      select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        avatarUrl: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
-
+  
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
-    return user;
-  }
+  
+    const couple = user.coupleMembers[0]?.couple;
+  
+    const partner = couple?.members
+      .map((m) => m.user)
+      .find((u) => u.id !== user.id);
+  
+    return {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      visibility: user.visibility,
+    
+      coupleId: couple?.id ?? null,
+    
+      partner: partner
+        ? {
+            id: partner.id,
+            username: partner.username,
+            name: partner.name,
+            avatarUrl: partner.avatarUrl,
+          }
+        : null,
+    };
+}
 
   async updateMe(userId: string, dto: UpdateUserDto) {
     return this.prisma.user.update({
@@ -69,43 +124,29 @@ export class UsersService {
     return user;
   }
 
-// async findById(id: string) {
-//   const user =
-//     await this.prisma.user.findUnique({
-//       where: { id },
-//       include: {
-//         coupleMember: {
-//           include: {
-//             couple: true,
-//           },
-//         },
-//       },
-//     });
+  async findById(id: string) {
+    const user =
+      await this.prisma.user.findUnique({
+        where: { id },
+        include: {
+          coupleMembers: {
+            include: {
+              couple: true,
+            },
+          },
+        },
+      });
 
-//   if (!user) {
-//     throw new NotFoundException(
-//       'User not found',
-//     );
-//   }
+    if (!user) {
+      throw new NotFoundException(
+        'User not found',
+      );
+    }
 
-//   return user;
-// }
-
-async findById(id: string) {
-  const user = await this.prisma.user.findUnique({
-    where: {
-      id,
-    },
-  });
-
-  if (!user) {
-    throw new NotFoundException(
-      'User not found',
-    );
+    return user;
   }
 
-  return user;
-}
+
 
   async getUserVisits(username: string, query: GetUserVisitsDto) {
     const user = await this.prisma.user.findUnique({

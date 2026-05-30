@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { VisitsModule } from './visits/visits.module';
+import { CouplesModule } from './couples/couples.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { VisitsModule } from './visits/visits.module';
     AuthModule,
     UsersModule,
     VisitsModule,
+    CouplesModule,
   ],
   providers: [
     {

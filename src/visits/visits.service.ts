@@ -1,60 +1,93 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateVisitDto } from './dto/create-visit.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Visibility, Place } from '@prisma/client';
+import { Visibility, Place, OwnerType } from '@prisma/client';
 import { UpdateVisitDto } from './dto/update-visit.dto';
 
 @Injectable()
 export class VisitsService {
     constructor(private readonly prisma: PrismaService) {}
     
-    async create(userId: string, dto: CreateVisitDto) {
+    async create(
+        currentUserId: string,
+        dto: CreateVisitDto,
+    ) {
 
-        let place: Place
-
+        let place: Place | null = null;
+        
         if (dto.externalId) {
-            const existing = await this.prisma.place.findUnique({
+            place = await this.prisma.place.findUnique({
                 where: {
                     externalId: dto.externalId,
                 },
             });
-            
-            if (existing) {
-                place = existing;
-            } else {
-                place = await this.prisma.place.create({
-                    data: {
-                        externalId: dto.externalId,
-                        title: dto.title,
-                        lat: dto.lat,
-                        lng: dto.lng,
-                        address: dto.address,
-                        websiteUrl: dto.websiteUrl,
-                    },
-                });
-            } 
-        } else {
+        }
+
+        if (!place) {
             place = await this.prisma.place.create({
                 data: {
+                    externalId: dto.externalId,
                     title: dto.title,
                     lat: dto.lat,
                     lng: dto.lng,
                     address: dto.address,
                     websiteUrl: dto.websiteUrl,
+                },
+            });
+        }
+
+        let userId: string | null = null;
+        let coupleId: string | null = null;
+
+        switch (dto.ownerType) {
+            case OwnerType.USER:
+                userId = currentUserId;
+                break;
+
+            case OwnerType.COUPLE:
+                if (!dto.coupleId) {
+                    throw new BadRequestException(
+                        'coupleId is required for couple visits',
+                    );
                 }
-            })
+
+                const membership =
+                    await this.prisma.coupleMember.findFirst({
+                        where: {
+                            userId: currentUserId,
+                            coupleId: dto.coupleId,
+                        },
+                    });
+
+                if (!membership) {
+                    throw new ForbiddenException(
+                        'You are not a member of this couple',
+                    );
+                }
+
+                coupleId = dto.coupleId;
+                break;
+
+            default:
+                throw new BadRequestException(
+                    'Invalid owner type',
+                );
         }
 
         const visit = await this.prisma.visit.create({
             data: {
                 placeId: place.id,
-                userId: userId,
+                ownerType: dto.ownerType,
+                userId,
+                coupleId,
+
                 description: dto.description,
-                rating: dto.rating,
-                isFavorite: dto.isFavorite,
+                rating: dto.rating ?? null,
+                isFavorite: dto.isFavorite ?? false,
+
                 visitDate: new Date(dto.visitDate),
                 visibility: dto.visibility ?? Visibility.PUBLIC,
-            }, 
+            },
             include: {
                 place: true,
             },
@@ -86,7 +119,35 @@ export class VisitsService {
         }
 
         return visit;
-}
+    }
+
+    async findByUser(userId: string) {
+        return this.prisma.visit.findMany({
+            where: { 
+                userId 
+            },
+            include: { 
+                place: true 
+            },
+            orderBy: { 
+                createdAt: 'desc' 
+            },
+        });
+    }
+
+    async findByCouple(coupleId: string) {
+        return this.prisma.visit.findMany({
+            where: { 
+                coupleId 
+            },
+            include: { 
+                place: true 
+            },
+            orderBy: { 
+                createdAt: 'desc' 
+            },
+        });
+    }
 
     async update(userId: string, visitId: string, dto: UpdateVisitDto) {
         const visit = await this.prisma.visit.findUnique({
@@ -111,13 +172,13 @@ export class VisitsService {
                 description: dto.description,
                 rating: dto.rating,
                 isFavorite: dto.isFavorite,
-                visitDate: dto.visitDate ? new Date(dto.visitDate) : undefined,
                 visibility: dto.visibility,
+                visitDate: dto.visitDate ? new Date(dto.visitDate) : undefined,
             }
         })
     }
 
-    async remove(userId: string, visitId: string) {
+    async delete(userId: string, visitId: string) {
         const visit = await this.prisma.visit.findUnique({
             where: {
                 id: visitId,

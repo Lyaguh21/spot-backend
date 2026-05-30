@@ -3,6 +3,7 @@ import {
     ApiBearerAuth,
     ApiBody,
     ApiOkResponse,
+    ApiCreatedResponse,
     ApiOperation,
     ApiParam,
     ApiTags,
@@ -19,15 +20,9 @@ import { VisitsService } from './visits.service';
 export class VisitsController {
     constructor(private readonly visits: VisitsService) {}
 
-    /* 
-    POST   /visits
-    GET    /visits/:id
-    PATCH  /visits/:id
-    DELETE /visits/:id
- */
-
     @ApiOperation({ summary: 'Создать посещение' })
     @ApiBody({ type: CreateVisitDto })
+    @ApiCreatedResponse({ description: 'Созданное посещение' })
     @Post()
     create(
         @CurrentUser('sub') userId: string, 
@@ -43,6 +38,22 @@ export class VisitsController {
     @Get(':id')
     findOne(@Param('id') id: string,) {
         return this.visits.findOne(id);
+    }
+
+    @Get('user/:userId')
+    @ApiOperation({ summary: 'Получить посещения пользователя' })
+    @ApiParam({ name: 'userId', example: '2994aa76-2c5e-48ab-acbe-367c9a7957dc' })
+    @ApiOkResponse({ description: 'Список посещений пользователя' })
+    findByUser(@Param('userId') userId: string) {
+        return this.visits.findByUser(userId);
+    }
+
+    @Get('couple/:coupleId')
+    @ApiOperation({ summary: 'Получить посещения пары' })
+    @ApiParam({ name: 'coupleId', example: 'couple_123' })
+    @ApiOkResponse({ description: 'Список посещений пары' })
+    findByCouple(@Param('coupleId') coupleId: string) {
+        return this.visits.findByCouple(coupleId);
     }
 
     @ApiOperation({ summary: 'Обновить посещение' })
@@ -64,10 +75,10 @@ export class VisitsController {
     @ApiOkResponse({ description: 'Посещение удалено' })
     @ApiNotFoundResponse({ description: 'Visit not found' })
     @Delete(':id')
-    remove(
+    delete(
         @CurrentUser('sub') userId: string,
         @Param('id') id: string,
     ) {
-        return this.visits.remove(userId, id);
+        return this.visits.delete(userId, id);
     }
 }
