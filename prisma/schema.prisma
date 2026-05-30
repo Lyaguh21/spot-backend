@@ -14,7 +14,7 @@ model User {
 
   avatarUrl  String?
   bio        String?
-  visibility Visibility @default(FOLLOWERS)
+  visibility Visibility @default(PUBLIC)
 
   visits Visit[]
 
@@ -62,7 +62,7 @@ model Visit {
 
   visitDate DateTime
 
-  visibility Visibility @default(FOLLOWERS)
+  visibility Visibility @default(PUBLIC)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -70,5 +70,5 @@ model Visit {
 
 enum Visibility {
   PRIVATE
-  FOLLOWERS
+  PUBLIC
 }
