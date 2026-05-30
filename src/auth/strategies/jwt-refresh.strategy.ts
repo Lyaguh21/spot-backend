@@ -24,14 +24,13 @@ export class JwtRefreshStrategy extends PassportStrategy(
 
   async validate(
     req: Request,
-    payload: { sub: number; email: string },
+    payload: { sub: string; email: string },
   ): Promise<AuthUserWithRefresh> {
     const refreshToken = req.cookies?.refreshToken;
     return {
       id: payload.sub,
       email: payload.email,
       refreshToken,
-      role: 'CUSTOMER',
     };
   }
 }

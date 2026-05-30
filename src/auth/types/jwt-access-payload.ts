@@ -1,4 +1,5 @@
 export type JwtAccessPayload = {
-  userId: number;
+  sub: string;
   email: string;
+  tokenVersion: number;
 };

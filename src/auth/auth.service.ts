@@ -37,6 +37,8 @@ export class AuthService {
 
   async register(dto: RegisterDto) {
     const email = dto.email.toLowerCase().trim();
+    const username = dto.username.trim();
+    const name = dto.name.trim();
 
     const existingUser = await this.prisma.user.findUnique({
       where: {
@@ -52,26 +54,22 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         email,
+        username,
+        name,
         passwordHash,
       },
       select: {
         email: true,
         id: true,
-        role: true,
         tokenVersion: true,
       },
     });
 
-    const tokens = await this.issueTokens(
-      user.id,
-      user.email,
-      user.role,
-      user.tokenVersion,
-    );
+    const tokens = await this.issueTokens(user.id, user.email, user.tokenVersion);
     await this.setRefreshTokenHash(user.id, tokens.refreshToken);
 
     return {
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id, email: user.email },
       ...tokens,
     };
   }
@@ -86,7 +84,6 @@ export class AuthService {
         id: true,
         email: true,
         passwordHash: true,
-        role: true,
         tokenVersion: true,
       },
     });
@@ -97,18 +94,13 @@ export class AuthService {
     if (!ok) throw new BadRequestException('Неверный пароль');
 
     const safeUser = { id: user.id, email: user.email };
-    const tokens = await this.issueTokens(
-      user.id,
-      user.email,
-      user.role,
-      user.tokenVersion,
-    );
+    const tokens = await this.issueTokens(user.id, user.email, user.tokenVersion);
     await this.setRefreshTokenHash(user.id, tokens.refreshToken);
 
     return { user: safeUser, ...tokens };
   }
 
-  async logout(userId: number) {
+  async logout(userId: string) {
     await this.prisma.user.update({
       where: { id: userId },
       data: { hashedRefreshToken: null, tokenVersion: { increment: 1 } },
@@ -117,14 +109,13 @@ export class AuthService {
     return { ok: true };
   }
 
-  async refreshTokens(userId: number, refreshTokenFromCookie: string) {
+  async refreshTokens(userId: string, refreshTokenFromCookie: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         email: true,
         hashedRefreshToken: true,
-        role: true,
         tokenVersion: true,
       },
     });
@@ -138,22 +129,17 @@ export class AuthService {
     );
     if (!matches) throw new ForbiddenException('Access Denied');
 
-    const tokens = await this.issueTokens(
-      user.id,
-      user.email,
-      user.role,
-      user.tokenVersion,
-    );
+    const tokens = await this.issueTokens(user.id, user.email, user.tokenVersion);
 
     await this.setRefreshTokenHash(user.id, tokens.refreshToken);
 
     return {
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id, email: user.email },
       ...tokens,
     };
   }
 
-  private async setRefreshTokenHash(userId: number, refreshToken: string) {
+  private async setRefreshTokenHash(userId: string, refreshToken: string) {
     const hash = await bcrypt.hash(refreshToken, 10);
     await this.prisma.user.update({
       where: { id: userId },
@@ -162,12 +148,11 @@ export class AuthService {
   }
 
   private async issueTokens(
-    userId: number,
+    userId: string,
     email: string,
-    role: string,
     tokenVersion: number,
   ) {
-    const payload = { sub: userId, email, role, tokenVersion };
+    const payload = { sub: userId, email, tokenVersion };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwt.signAsync(payload, {

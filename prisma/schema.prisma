@@ -6,20 +6,27 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
-  ADMIN
-  WAITER
-  COOK
-  CUSTOMER
-}
-
 model User {
-  id                 Int      @id @default(autoincrement())
-  email              String   @unique
+  id       String @id @default(uuid())
+  username String @unique
+  name     String
+  email    String @unique
+
+  avatarUrl  String?
+  bio        String?
+  visibility Visibility @default(FOLLOWERS)
+
   passwordHash       String
   hashedRefreshToken String? // может быть null (если не залогинен)
-  tokenVersion       Int      @default(0)
-  role               Role     @default(CUSTOMER)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  tokenVersion       Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean @default(false)
+}
+
+enum Visibility {
+  PRIVATE
+  FOLLOWERS
 }
