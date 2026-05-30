@@ -16,6 +16,8 @@ model User {
   bio        String?
   visibility Visibility @default(FOLLOWERS)
 
+  visits Visit[]
+
   passwordHash       String
   hashedRefreshToken String? // может быть null (если не залогинен)
   tokenVersion       Int     @default(0)
@@ -24,6 +26,46 @@ model User {
   updatedAt DateTime @updatedAt
 
   isDeleted Boolean @default(false)
+}
+
+model Place {
+  id String @id @default(uuid())
+
+  title String
+
+  lat Float
+  lng Float
+
+  address String?
+
+  websiteUrl String?
+
+  createdAt DateTime @default(now())
+
+  visits Visit[]
+}
+
+model Visit {
+  id String @id @default(uuid())
+
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  description String?
+
+  rating Int
+
+  isFavorite Boolean @default(false)
+
+  visitDate DateTime
+
+  visibility Visibility @default(FOLLOWERS)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Visibility {
