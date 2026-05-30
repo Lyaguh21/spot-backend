@@ -20,7 +20,7 @@ export class UpdateUserDto {
   @IsUrl()
   avatarUrl?: string;
 
-  @ApiPropertyOptional({ example: Visibility.FOLLOWERS, enum: Visibility })
+  @ApiPropertyOptional({ example: Visibility.PUBLIC, enum: Visibility })
   @IsOptional()
   @IsEnum(Visibility)
   visibility?: Visibility;

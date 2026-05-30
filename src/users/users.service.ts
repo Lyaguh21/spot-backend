@@ -118,18 +118,16 @@ async findById(id: string) {
       throw new NotFoundException();
     }
 
-    return true
-
-    // return this.prisma.visit.findMany({
-    //   where: {
-    //     userId: user.id,
-    //   },
-    //   skip: (query.page - 1) * query.limit,
-    //   take: query.limit,
-    //   orderBy: {
-    //     createdAt: 'desc',
-    //   },
-    // });
+    return this.prisma.visit.findMany({
+      where: {
+        userId: user.id,
+      },
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 
 

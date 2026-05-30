@@ -3,8 +3,21 @@ import type { Request } from 'express';
 import { AuthUser, AuthUserWithRefresh } from 'src/auth/types/auth-user.type';
 
 export const CurrentUser = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): AuthUser | AuthUserWithRefresh => {
+  (
+    data: keyof AuthUser | keyof AuthUserWithRefresh | 'sub' | undefined,
+    ctx: ExecutionContext,
+  ): AuthUser | AuthUserWithRefresh | string | undefined => {
     const req = ctx.switchToHttp().getRequest<Request>();
-    return req.user as any;
+    const user = req.user as unknown as AuthUser | AuthUserWithRefresh;
+
+    if (!data) {
+      return user;
+    }
+
+    if (data === 'sub') {
+      return user.id;
+    }
+
+    return user[data];
   },
 );
