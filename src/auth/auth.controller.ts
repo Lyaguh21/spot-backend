@@ -20,6 +20,7 @@ import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { Public } from './decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { LoginDto } from './dto/login.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -75,7 +76,7 @@ export class AuthController {
   @Post('login')
   @Public()
   async login(
-    @Body() dto: RegisterDto,
+    @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.auth.login(dto);
