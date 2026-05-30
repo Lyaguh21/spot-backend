@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 import { AuthUserWithRefresh } from 'src/auth/types/auth-user.type';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 function cookieExtractorRefresh(req: Request): string | null {
   return req?.cookies?.refreshToken ?? null;
@@ -14,7 +15,10 @@ export class JwtRefreshStrategy extends PassportStrategy(
   Strategy,
   'jwt-refresh',
 ) {
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([cookieExtractorRefresh]),
       secretOrKey: config.get<string>('JWT_REFRESH_SECRET')!,
@@ -26,10 +30,25 @@ export class JwtRefreshStrategy extends PassportStrategy(
     req: Request,
     payload: { sub: string; email: string },
   ): Promise<AuthUserWithRefresh> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        email: true,
+        username: true,
+        name: true,
+      },
+    });
+
+    if (!user) {
+      return null as never;
+    }
+
     const refreshToken = req.cookies?.refreshToken;
     return {
       id: payload.sub,
-      email: payload.email,
+      email: user.email,
+      username: user.username,
+      name: user.name,
       refreshToken,
     };
   }

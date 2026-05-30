@@ -138,6 +138,7 @@ export class AuthController {
 
   @ApiCookieAuth('accessToken')
   @Get('status')
+  @UseGuards(JwtAccessGuard)
   status(@CurrentUser() user: AuthUser) {
     return { authenticated: true, user };
   }

@@ -60,8 +60,10 @@ export class AuthService {
         passwordHash,
       },
       select: {
-        email: true,
         id: true,
+        email: true,
+        username: true,
+        name: true,
         tokenVersion: true,
       },
     });
@@ -69,8 +71,15 @@ export class AuthService {
     const tokens = await this.issueTokens(user.id, user.email, user.tokenVersion);
     await this.setRefreshTokenHash(user.id, tokens.refreshToken);
 
+    const safeUser = { 
+      id: user.id, 
+      email: user.email,
+      username: user.username,
+      name: user.name,
+    };
+
     return {
-      user: { id: user.id, email: user.email },
+      user: safeUser,
       ...tokens,
     };
   }
@@ -84,6 +93,8 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        username: true,
+        name: true,
         passwordHash: true,
         tokenVersion: true,
       },
@@ -94,7 +105,13 @@ export class AuthService {
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new BadRequestException('Неверный пароль');
 
-    const safeUser = { id: user.id, email: user.email };
+    const safeUser = { 
+      id: user.id, 
+      email: user.email,
+      username: user.username,
+      name: user.name,
+    };
+
     const tokens = await this.issueTokens(user.id, user.email, user.tokenVersion);
     await this.setRefreshTokenHash(user.id, tokens.refreshToken);
 

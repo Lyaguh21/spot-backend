@@ -37,6 +37,9 @@ export class JwtAccessStrategy extends PassportStrategy(
         id: payload.sub,
       },
       select: {
+        email: true,
+        username: true,
+        name: true,
         tokenVersion: true,
       },
     });
@@ -45,6 +48,11 @@ export class JwtAccessStrategy extends PassportStrategy(
       throw new UnauthorizedException('Token expired');
     }
 
-    return { id: payload.sub, email: payload.email };
+    return {
+      id: payload.sub,
+      email: user.email,
+      username: user.username,
+      name: user.name,
+    };
   }
 }
