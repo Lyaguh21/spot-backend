@@ -19,7 +19,7 @@ getById(id)
 update(userId, coupleId, dto)
      */
 
-    generateUniqueInviteCode(length: number = 6): string {
+    generateUniqueInviteCode(length: number = 5): string {
         return randomBytes(length)
         .toString('base64')
         .replace(/[+/=]/g, '')
