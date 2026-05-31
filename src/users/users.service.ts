@@ -19,11 +19,7 @@ export class UsersService {
 
   getAll() {
     return this.prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        createdAt: true,
-      },
+      select: this.userProfileSelect,
     });
   }
 
@@ -143,7 +139,15 @@ export class UsersService {
       );
     }
 
-    return user;
+    return {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      visibility: user.visibility,
+    }
   }
 
 

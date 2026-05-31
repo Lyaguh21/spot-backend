@@ -123,7 +123,14 @@ update(userId, coupleId, dto)
                     include: {
                         members: {
                             include: {
-                                user: true,
+                                user: {
+                                    select: {
+                                        id: true,
+                                        username: true,
+                                        name: true,
+                                        avatarUrl: true,
+                                    }
+                                }
                             }
                         }
                     }
