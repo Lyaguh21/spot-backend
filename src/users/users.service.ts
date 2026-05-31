@@ -81,15 +81,14 @@ export class UsersService {
       coupleId: couple?.id ?? null,
     
       partner: partner
-        ? {
-            id: partner.id,
-            username: partner.username,
-            name: partner.name,
-            avatarUrl: partner.avatarUrl,
-          }
-        : null,
+      ? {
+          id: partner.id,
+          username: partner.username,
+          name: partner.name,
+          avatarUrl: partner.avatarUrl,
+        }: null,
     };
-}
+  }
 
   async updateMe(userId: string, dto: UpdateUserDto) {
     return this.prisma.user.update({
@@ -107,17 +106,69 @@ export class UsersService {
 
   async findByUsername(username: string) {
     const user = await this.prisma.user.findUnique({
-      where: {
-        username,
+      where: { username },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+        bio: true,
+        visibility: true,
+      
+        coupleMembers: {
+          select: {
+            couple: {
+              select: {
+                id: true,
+                members: {
+                  select: {
+                    user: {
+                      select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        avatarUrl: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
-      select: this.userProfileSelect,
     });
-
+  
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
-    return user;
+  
+    const couple = user.coupleMembers[0]?.couple;
+  
+    const partner = couple?.members
+      .map((m) => m.user)
+      .find((u) => u.id !== user.id);
+  
+    return {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      visibility: user.visibility,
+    
+      coupleId: couple?.id ?? null,
+    
+      partner: partner
+      ? {
+          id: partner.id,
+          username: partner.username,
+          name: partner.name,
+          avatarUrl: partner.avatarUrl,
+        }: null,
+    };
   }
 
   async findById(id: string) {
