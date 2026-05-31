@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -21,7 +21,6 @@ export class UsersController {
   constructor(private readonly users: UsersService) {}
 
   @ApiOperation({ summary: 'Получить мой профиль' })
-  // @ApiOkResponse({ type: UserProfileResponseDto })
   @Get('me')
   getMe(@CurrentUser() user: AuthUser) {
     return this.users.getMe(String(user.id));
@@ -67,5 +66,25 @@ export class UsersController {
     @Query() query: GetUserVisitsDto,
   ) {
     return this.users.getUserPlaces(username, query);
+  }
+
+  @ApiOperation({ summary: 'Подписаться на пользователя' })
+  @ApiOkResponse({ description: 'Успешная подписка на пользователя' })
+  @Post(':username/follow')
+  followToUser(
+    @Param('username') username: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.users.follow(String(user.id), username);
+  }
+
+  @ApiOperation({ summary: 'Отписаться от пользователя' })
+  @ApiOkResponse({ description: 'Успешная отписка от пользователя' })
+  @Delete(':username/follow')
+  unfollowToUser(
+    @Param('username') username: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.users.unfollow(String(user.id), username);
   }
 }

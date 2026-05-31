@@ -18,6 +18,10 @@ model User {
 
   coupleMembers CoupleMember[]
 
+  followers UserSubscription[] @relation("UserFollowing")
+
+  following UserSubscription[] @relation("UserFollowers")
+
   visits Visit[] @relation("UserVisits")
 
   passwordHash       String
@@ -28,6 +32,21 @@ model User {
   updatedAt DateTime @updatedAt
 
   isDeleted Boolean @default(false)
+}
+
+model UserSubscription {
+  id String @id @default(uuid())
+
+  followerId   String
+  targetUserId String
+
+  follower User @relation("UserFollowers", fields: [followerId], references: [id])
+
+  targetUser User @relation("UserFollowing", fields: [targetUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([followerId, targetUserId])
 }
 
 model Couple {

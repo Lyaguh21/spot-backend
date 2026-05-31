@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { GetUserVisitsDto } from './dto/get-user-visits.dto';
@@ -21,6 +21,38 @@ export class UsersService {
     return this.prisma.user.findMany({
       select: this.userProfileSelect,
     });
+  }
+
+  private async getUserStats(userId: string) {
+    const places = await this.prisma.visit.findMany({
+      where: {
+        userId,
+      },
+      distinct: ['placeId'],
+      select: {
+        placeId: true,
+      },
+    });
+
+    const placesCount = places.length;
+
+    const followersCount = await this.prisma.userSubscription.count({
+      where: {
+        targetUserId: userId,
+      },
+    });
+
+    const followingCount = await this.prisma.userSubscription.count({
+      where: {
+        followerId: userId,
+      },
+    });
+
+    return {
+      places: placesCount,
+      followers: followersCount,
+      following: followingCount
+    };
   }
 
   async getMe(id: string) {
@@ -68,6 +100,8 @@ export class UsersService {
     const partner = couple?.members
       .map((m) => m.user)
       .find((u) => u.id !== user.id);
+
+      const stats = await this.getUserStats(user.id);
   
     return {
       id: user.id,
@@ -87,6 +121,8 @@ export class UsersService {
           name: partner.name,
           avatarUrl: partner.avatarUrl,
         }: null,
+
+      stats
     };
   }
 
@@ -149,6 +185,8 @@ export class UsersService {
     const partner = couple?.members
       .map((m) => m.user)
       .find((u) => u.id !== user.id);
+
+      const stats = await this.getUserStats(user.id);
   
     return {
       id: user.id,
@@ -168,6 +206,7 @@ export class UsersService {
           name: partner.name,
           avatarUrl: partner.avatarUrl,
         }: null,
+        stats
     };
   }
 
@@ -266,5 +305,65 @@ export class UsersService {
       map: Array.from(placesMap.values()),
     };
   }
+
+  async follow(currentUserId: string, username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        username,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.id === currentUserId) {
+      throw new BadRequestException('Cannot follow yourself');
+    }
+
+    if (await this.prisma.userSubscription.findFirst({
+      where: {
+        followerId: currentUserId,
+        targetUserId: user.id,
+      },
+    })) {
+      throw new BadRequestException('Already following this user');
+    }
+
+    await this.prisma.userSubscription.create({
+      data: {
+        followerId: currentUserId,
+        targetUserId: user.id,
+      },
+    });
+
+    return {
+      message: 'Followed successfully',
+    };
+  }
+
+  async unfollow(currentUserId: string, username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        username,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.prisma.userSubscription.deleteMany({
+      where:{
+        followerId: currentUserId,
+        targetUserId: user.id,
+      }
+    })
+
+    return { 
+      message: 'Unfollowed successfully' 
+    };
+  }
+
 
 }
