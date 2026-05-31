@@ -52,6 +52,13 @@ export class CouplesController {
         return this.couples.getMyCouple(userId);
     }
 
+    @ApiOperation({ summary: 'Обновить код приглашения' })
+    @ApiCreatedResponse({ description: 'Новый код приглашения' })
+    @Post('reset-invite-code')
+    resetInviteCode(@CurrentUser('id') userId: string) {
+        return this.couples.resetInviteCode(userId);
+    }
+
     @ApiOperation({ summary: 'Получить пару по id' })
     @ApiParam({ name: 'id', example: 'couple_123' })
     @ApiOkResponse({ description: 'Данные пары' })

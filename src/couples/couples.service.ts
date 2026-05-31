@@ -90,6 +90,25 @@ update(userId, coupleId, dto)
         })
     }
 
+    async resetInviteCode(userId: string) {
+        const couple = await this.getMyCouple(userId);
+
+        const inviteCode = await this.generateUniqueInviteCode();
+
+        await this.prisma.couple.update({
+            where: {
+                id: couple.id,
+            },
+            data: {
+                inviteCode,
+            },
+        });
+
+        return {
+            inviteCode,
+        };
+    }
+
     async getMyCouple(userId: string) {
         const membership = await this.prisma.coupleMember.findFirst({
             where: {

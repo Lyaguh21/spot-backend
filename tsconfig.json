@@ -1,6 +1,7 @@
 {
   "include": ["src/**/*.ts", "src/**/*.d.ts"],
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
