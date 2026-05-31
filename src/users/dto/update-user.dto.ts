@@ -12,7 +12,7 @@ export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'Люблю кофе и хорошие обеды' })
   @IsOptional()
   @IsString()
-  @Length(1, 500)
+  @Length(0, 500)
   bio?: string;
 
   @ApiPropertyOptional({ example: 'https://cdn.example.com/avatars/alex.jpg' })

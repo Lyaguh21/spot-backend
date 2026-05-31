@@ -139,7 +139,8 @@ export class AuthController {
   @ApiCookieAuth('accessToken')
   @Get('status')
   @UseGuards(JwtAccessGuard)
-  status(@CurrentUser() user: AuthUser) {
-    return { authenticated: true, user };
+  async status(@CurrentUser() user: AuthUser) {
+    const statusUser = await this.auth.getStatus(user.id);
+    return { authenticated: true, user: statusUser };
   }
 }

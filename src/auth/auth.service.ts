@@ -12,6 +12,14 @@ import * as bcrypt from 'bcrypt';
 import type { StringValue } from 'ms';
 import { LoginDto } from './dto/login.dto';
 
+type AuthStatusUser = {
+  id: string;
+  email: string;
+  username: string;
+  name: string;
+  coupleId: string | null;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -125,6 +133,35 @@ export class AuthService {
     });
 
     return { ok: true };
+  }
+
+  async getStatus(userId: string): Promise<AuthStatusUser> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        coupleMembers: {
+          select: {
+            coupleId: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      name: user.name,
+      coupleId: user.coupleMembers[0]?.coupleId ?? null,
+    };
   }
 
   async refreshTokens(userId: string, refreshTokenFromCookie: string) {
