@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     Param,
     Post,
@@ -17,15 +18,20 @@ import {
     ApiCreatedResponse,
 } from '@nestjs/swagger';
 
+import { UsersService } from '../users/users.service';
 import { CouplesService } from './couples.service';
 import { JoinCoupleDto } from './dto/join-couple.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import type { AuthUser } from 'src/auth/types/auth-user.type';
 
 @ApiTags('couples')
 @ApiBearerAuth('accessToken')
 @Controller('couples')
 export class CouplesController {
-    constructor(private readonly couples: CouplesService) {}
+    constructor(
+        private readonly couples: CouplesService,
+        private readonly users: UsersService
+    ) {}
 
     @ApiOperation({ summary: 'Создать пару' })
     @ApiCreatedResponse({ description: 'Созданная пара' })
@@ -80,5 +86,27 @@ export class CouplesController {
     @Get(':id/places')
     getCouplePlaces(@Param('id') id: string,) {
         return this.couples.getCouplePlaces(id);
+    }
+
+    @ApiOperation({ summary: 'Подписаться на пару' })
+    @Post(':id/follow')
+    followToCouple(
+        @Param('id') coupleId: string,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.users.follow(String(user.id), {
+            coupleId,
+        });
+    }
+
+    @ApiOperation({ summary: 'Отписаться от пары' })
+    @Delete(':id/follow')
+    unfollowToCouple(
+        @Param('id') coupleId: string,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.users.unfollow(String(user.id), {
+            coupleId,
+        });
     }
 }

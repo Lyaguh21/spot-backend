@@ -75,7 +75,7 @@ export class UsersController {
     @Param('username') username: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.users.follow(String(user.id), username);
+    return this.users.follow(String(user.id), { username });
   }
 
   @ApiOperation({ summary: 'Отписаться от пользователя' })
@@ -85,6 +85,6 @@ export class UsersController {
     @Param('username') username: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.users.unfollow(String(user.id), username);
+    return this.users.unfollow(String(user.id), { username });
   }
 }

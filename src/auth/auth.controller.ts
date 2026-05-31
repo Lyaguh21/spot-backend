@@ -16,7 +16,7 @@ import type { Request, Response } from 'express';
 import { parseDurationMs } from './utils/parse-duration-ms';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { AuthUser, AuthUserWithRefresh } from './types/auth-user.type';
-import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiTags, ApiBody, ApiOkResponse } from '@nestjs/swagger';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { Public } from './decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
@@ -54,6 +54,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @ApiBody({ type: RegisterDto })
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
@@ -75,6 +76,7 @@ export class AuthController {
 
   @Post('login')
   @Public()
+  @ApiBody({ type: LoginDto })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -139,6 +141,15 @@ export class AuthController {
   @ApiCookieAuth('accessToken')
   @Get('status')
   @UseGuards(JwtAccessGuard)
+  @ApiOkResponse({
+    description: 'Authenticated status',
+    schema: {
+      example: {
+        authenticated: true,
+        user: { id: 'uuid', email: 'user@example.com', username: 'user_1', name: 'User', coupleId: null },
+      },
+    },
+  })
   async status(@CurrentUser() user: AuthUser) {
     const statusUser = await this.auth.getStatus(user.id);
     return { authenticated: true, user: statusUser };

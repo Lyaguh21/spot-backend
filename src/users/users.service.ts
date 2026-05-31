@@ -306,64 +306,133 @@ export class UsersService {
     };
   }
 
-  async follow(currentUserId: string, username: string) {
-    const user = await this.prisma.user.findUnique({
+  async follow(
+    currentUserId: string, 
+    target: {
+      username?: string; 
+      coupleId?: string 
+    }) {
+
+    const currentUser = await this.prisma.user.findUnique({
       where: {
-        username,
-      },
+        id: currentUserId 
+      } 
     });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
+    if (!currentUser) {
+      throw new NotFoundException('Current user not found');
     }
 
-    if (user.id === currentUserId) {
-      throw new BadRequestException('Cannot follow yourself');
-    }
+// ? подписка на пользователя
 
-    if (await this.prisma.userSubscription.findFirst({
-      where: {
-        followerId: currentUserId,
-        targetUserId: user.id,
-      },
-    })) {
-      throw new BadRequestException('Already following this user');
-    }
+    if (target.username) {
+      const targetUser = await this.prisma.user.findUnique({
+        where: {
+          username: target.username,
+        },
+      })
 
-    await this.prisma.userSubscription.create({
-      data: {
-        followerId: currentUserId,
-        targetUserId: user.id,
-      },
-    });
-
-    return {
-      message: 'Followed successfully',
-    };
-  }
-
-  async unfollow(currentUserId: string, username: string) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        username,
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    await this.prisma.userSubscription.deleteMany({
-      where:{
-        followerId: currentUserId,
-        targetUserId: user.id,
+      if (!targetUser) {
+        throw new NotFoundException('Target user not found');
       }
-    })
 
-    return { 
-      message: 'Unfollowed successfully' 
-    };
+      if (targetUser.id === currentUserId) {
+        throw new BadRequestException('Cannot follow yourself');
+      }
+
+      const existing = await this.prisma.userSubscription.findFirst({
+        where: {
+          followerId: currentUserId,
+          targetUserId: targetUser.id 
+        },
+      })
+
+      return { message: 'Followed user successfully' };
+    }
+
+// ? подписка на пару
+
+    if (target.coupleId) {
+      const couple = await this.prisma.couple.findUnique({
+        where: {
+          id: target.coupleId,
+        },
+      })
+
+      if (!couple) {
+        throw new NotFoundException('Target couple not found');
+      }
+
+      const existing = await this.prisma.coupleSubscription.findFirst({
+        where: {
+          followerId: currentUserId,
+          targetCoupleId: target.coupleId
+        }
+      })
+
+      if (existing) {
+        throw new BadRequestException('Already following this couple');
+      }
+
+      await this.prisma.coupleSubscription.create({
+        data: {
+          followerId: currentUserId,
+          targetCoupleId: target.coupleId
+        }
+      })
+
+      return { message: 'Followed couple successfully' };
+    }
   }
 
+  async unfollow(
+    currentUserId: string, 
+    target: {
+      username?: string; 
+      coupleId?: string 
+    }) {
 
+      if (target.username) {
+        const targetUser = await this.prisma.user.findUnique({
+          where: {
+            username: target.username,
+          }
+        })
+
+        if (!targetUser) {
+          throw new NotFoundException('Target user not found');
+        }
+
+        await this.prisma.userSubscription.deleteMany({
+          where: {
+            followerId: currentUserId,
+            targetUserId: targetUser.id
+          }
+        })
+
+
+        return { message: 'Unfollowed user successfully' };
+      }
+
+      if (target.coupleId) {
+        const couple = await this.prisma.couple.findUnique({
+          where: {
+            id: target.coupleId,
+          }
+        })
+
+        if (!couple) {
+          throw new NotFoundException('Target couple not found');
+        }
+
+        await this.prisma.coupleSubscription.deleteMany({
+          where: {
+            followerId: currentUserId,
+            targetCoupleId: target.coupleId
+          }
+        })
+
+        return { message: 'Unfollowed couple successfully' };
+      }
+  }
 }

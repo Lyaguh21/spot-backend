@@ -22,7 +22,7 @@ model User {
   followingUsers UserSubscription[] @relation("UserFollowing")
 
   // подписки на пары
-  // followingCouples CoupleSubscription[] @relation("UserFollowingCouples")
+  followingCouples CoupleSubscription[] @relation("UserFollowingCouples")
 
   // подписчики (только пользователи)
   followers UserSubscription[] @relation("UserFollowers")
@@ -45,9 +45,9 @@ model UserSubscription {
   followerId   String
   targetUserId String
 
-  follower User @relation("UserFollowers", fields: [followerId], references: [id])
+  follower User @relation("UserFollowing", fields: [followerId], references: [id])
 
-  targetUser User @relation("UserFollowing", fields: [targetUserId], references: [id])
+  targetUser User @relation("UserFollowers", fields: [targetUserId], references: [id])
 
   createdAt DateTime @default(now())
 
@@ -66,22 +66,24 @@ model Couple {
   members CoupleMember[]
 
   visits Visit[] @relation("CoupleVisits")
+
+  followers CoupleSubscription[]
 }
 
-// model CoupleSubscription {
-//   id String @id @default(uuid())
+model CoupleSubscription {
+  id String @id @default(uuid())
 
-//   followerId String
-//   targetCoupleId String
+  followerId     String
+  targetCoupleId String
 
-//   follower User @relation("UserFollowingCouples", fields: [followerId], references: [id])
+  follower User @relation("UserFollowingCouples", fields: [followerId], references: [id])
 
-//   targetCouple Couple @relation("Couple", fields: [targetCoupleId], references: [id])
+  targetCouple Couple @relation(fields: [targetCoupleId], references: [id])
 
-//   createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-//   @@unique([followerId, targetCoupleId])
-// }
+  @@unique([followerId, targetCoupleId])
+}
 
 model CoupleMember {
   id String @id @default(uuid())
