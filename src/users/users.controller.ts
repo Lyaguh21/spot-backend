@@ -12,6 +12,7 @@ import type { AuthUser } from 'src/auth/types/auth-user.type';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 import { GetUserVisitsDto } from './dto/get-user-visits.dto';
+import { Public } from 'src/auth/decorators/public.decorator';
 
 @ApiTags('users')
 @ApiBearerAuth('accessToken')
@@ -33,6 +34,7 @@ export class UsersController {
     return this.users.updateMe(String(user.id), dto);
   }
 
+  @Public()
   @ApiOperation({ summary: 'Получить пользователя по username' })
   @ApiParam({ name: 'username', example: 'alex' })
   @Get(':username')
@@ -40,11 +42,13 @@ export class UsersController {
     return this.users.findByUsername(username);
   }
 
+  @Public()
   @Get('id/:id')
   findById(@Param('id') id: string) {
     return this.users.findById(id);
   }
 
+  @Public()
   @ApiOperation({ summary: 'Получить посещения пользователя' })
   @ApiOkResponse({ description: 'Список посещений пользователя' })
   @Get(':username/visits')
