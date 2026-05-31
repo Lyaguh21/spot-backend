@@ -93,11 +93,15 @@ update(userId, coupleId, dto)
     async resetInviteCode(userId: string) {
         const couple = await this.getMyCouple(userId);
 
-        const inviteCode = await this.generateUniqueInviteCode();
+        if ((couple as any).status === 'NOT_COUPLE') {
+            throw new NotFoundException('User is not in a couple');
+        }
+
+        const inviteCode = this.generateUniqueInviteCode();
 
         await this.prisma.couple.update({
             where: {
-                id: couple.id,
+                id: (couple as any).id,
             },
             data: {
                 inviteCode,
@@ -120,9 +124,6 @@ update(userId, coupleId, dto)
                         members: {
                             include: {
                                 user: true,
-                            },
-                            orderBy: {
-                                createdAt: 'asc',
                             }
                         }
                     }
@@ -131,7 +132,9 @@ update(userId, coupleId, dto)
         })
 
         if (!membership) {
-            throw new NotFoundException('Couple not found');
+            return {
+                status: 'NOT_COUPLE',
+            };
         }
 
         const couple = membership.couple;
@@ -141,6 +144,7 @@ update(userId, coupleId, dto)
         .join(' & ');
 
         return {
+            status: 'SUCCESS',
             ...couple,
             generatedName,
         };
