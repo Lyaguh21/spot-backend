@@ -205,4 +205,47 @@ update(userId, coupleId, dto)
             },
         });
     }
+
+    async getCouplePlaces(coupleId: string) {
+        const couple = await this.prisma.couple.findUnique({
+            where: {
+                id: coupleId,
+            },
+        });
+    
+        if (!couple) {
+            throw new NotFoundException();
+        }
+    
+        const visits = await this.prisma.visit.findMany({
+            where: {
+                coupleId: couple.id,
+            },
+            include: {
+                place: true,
+            },
+            orderBy: {
+                visitDate: 'desc',
+            },
+        });
+    
+        const placesMap = new Map();
+    
+        for (const visit of visits) {
+            if (!placesMap.has(visit.place.id)) {
+                placesMap.set(visit.place.id, {
+                    place: visit.place,
+                    visits: [],
+                });
+            }
+    
+            const { place, ...visitWithoutPlace } = visit;
+    
+            placesMap.get(visit.place.id).visits.push(visitWithoutPlace);
+        }
+    
+        return {
+            map: Array.from(placesMap.values()),
+        };
+    }
 }

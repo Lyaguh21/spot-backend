@@ -74,4 +74,11 @@ export class CouplesController {
     findVisits(@Param('id') id: string) {
         return this.couples.findVisits(id);
     }
+
+    @ApiOperation({ summary: 'Получить места, которые посетила пара' })
+    @ApiOkResponse({ description: 'Список мест, которые посетила пара' })
+    @Get(':id/places')
+    getCouplePlaces(@Param('id') id: string,) {
+        return this.couples.getCouplePlaces(id);
+    }
 }
