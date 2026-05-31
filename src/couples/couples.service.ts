@@ -32,10 +32,13 @@ update(userId, coupleId, dto)
             where: {
                 userId,
             },
+            include: {
+                couple: true,
+            },
         });
 
         if (existingMembership) {
-            throw new BadRequestException('User already has a couple');
+            return existingMembership.couple;
         }
 
         const couple = await this.prisma.couple.create({
@@ -59,11 +62,27 @@ update(userId, coupleId, dto)
             where: {
                 userId,
             },
+            include: {
+                couple: {
+                    include: { 
+                        members: true 
+                    } 
+                } 
+            },
         });
 
         if (existingMembership) {
-            throw new BadRequestException('User already has a couple');
+            const oldCouple = existingMembership.couple;
+
+            if (oldCouple.members.length > 1) {
+            throw new BadRequestException('Cannot join another couple while in a couple with more than 1 member');
+            }
+
+            await this.prisma.coupleMember.delete({ where: { id: existingMembership.id } });
+            await this.prisma.couple.delete({ where: { id: oldCouple.id } });
         }
+
+        
 
         const couple = await this.prisma.couple.findUnique({
             where: {

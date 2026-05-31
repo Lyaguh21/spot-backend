@@ -18,9 +18,14 @@ model User {
 
   coupleMembers CoupleMember[]
 
-  followers UserSubscription[] @relation("UserFollowing")
+  // подписки на пользователей
+  followingUsers UserSubscription[] @relation("UserFollowing")
 
-  following UserSubscription[] @relation("UserFollowers")
+  // подписки на пары
+  // followingCouples CoupleSubscription[] @relation("UserFollowingCouples")
+
+  // подписчики (только пользователи)
+  followers UserSubscription[] @relation("UserFollowers")
 
   visits Visit[] @relation("UserVisits")
 
@@ -62,6 +67,21 @@ model Couple {
 
   visits Visit[] @relation("CoupleVisits")
 }
+
+// model CoupleSubscription {
+//   id String @id @default(uuid())
+
+//   followerId String
+//   targetCoupleId String
+
+//   follower User @relation("UserFollowingCouples", fields: [followerId], references: [id])
+
+//   targetCouple Couple @relation("Couple", fields: [targetCoupleId], references: [id])
+
+//   createdAt DateTime @default(now())
+
+//   @@unique([followerId, targetCoupleId])
+// }
 
 model CoupleMember {
   id String @id @default(uuid())
