@@ -201,8 +201,6 @@ export class UsersService {
     }
   }
 
-
-
   async getUserVisits(username: string, query: GetUserVisitsDto) {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -226,6 +224,47 @@ export class UsersService {
     });
   }
 
+  async getUserPlaces(username: string, query: GetUserVisitsDto) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        username,
+      },
+    });
 
+    if (!user) {
+      throw new NotFoundException();
+    }
+
+    const visits = await this.prisma.visit.findMany({
+      where: {
+        userId: user.id,
+      },
+      include: {
+        place: true,
+      },
+      orderBy: {
+        visitDate: 'desc',
+      },
+    });
+
+    const placesMap = new Map();
+
+    for (const visit of visits) {
+      if (!placesMap.has(visit.place.id)) {
+        placesMap.set(visit.place.id, {
+          place: visit.place,
+          visits: [],
+        });
+      }
+
+      const { place, ...visitWithoutPlace } = visit;
+
+      placesMap.get(visit.place.id).visits.push(visitWithoutPlace);
+    }
+
+    return {
+      map: Array.from(placesMap.values()),
+    };
+  }
 
 }

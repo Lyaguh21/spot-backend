@@ -54,4 +54,14 @@ export class UsersController {
   ) {
     return this.users.getUserVisits(username, query);
   }
+
+  @ApiOperation({ summary: 'Получить места, которые посетил пользователь' })
+  @ApiOkResponse({ description: 'Список мест, которые посетил пользователь' })
+  @Get(':username/places')
+  getUserPlaces(
+    @Param('username') username: string,
+    @Query() query: GetUserVisitsDto,
+  ) {
+    return this.users.getUserPlaces(username, query);
+  }
 }

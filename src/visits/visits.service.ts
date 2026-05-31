@@ -121,34 +121,6 @@ export class VisitsService {
         return visit;
     }
 
-    async findByUser(userId: string) {
-        return this.prisma.visit.findMany({
-            where: { 
-                userId 
-            },
-            include: { 
-                place: true 
-            },
-            orderBy: { 
-                createdAt: 'desc' 
-            },
-        });
-    }
-
-    async findByCouple(coupleId: string) {
-        return this.prisma.visit.findMany({
-            where: { 
-                coupleId 
-            },
-            include: { 
-                place: true 
-            },
-            orderBy: { 
-                createdAt: 'desc' 
-            },
-        });
-    }
-
     async update(userId: string, visitId: string, dto: UpdateVisitDto) {
         const visit = await this.prisma.visit.findUnique({
             where: {

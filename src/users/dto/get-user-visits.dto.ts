@@ -11,9 +11,6 @@ export class GetUserVisitsDto {
   @IsOptional()
   limit = 20;
 
-  @IsOptional()
-  tag?: string;
-
   @Transform(({ value }) =>
     value === 'true',
   )

@@ -40,22 +40,6 @@ export class VisitsController {
         return this.visits.findOne(id);
     }
 
-    @Get('user/:userId')
-    @ApiOperation({ summary: 'Получить посещения пользователя' })
-    @ApiParam({ name: 'userId', example: '2994aa76-2c5e-48ab-acbe-367c9a7957dc' })
-    @ApiOkResponse({ description: 'Список посещений пользователя' })
-    findByUser(@Param('userId') userId: string) {
-        return this.visits.findByUser(userId);
-    }
-
-    @Get('couple/:coupleId')
-    @ApiOperation({ summary: 'Получить посещения пары' })
-    @ApiParam({ name: 'coupleId', example: 'couple_123' })
-    @ApiOkResponse({ description: 'Список посещений пары' })
-    findByCouple(@Param('coupleId') coupleId: string) {
-        return this.visits.findByCouple(coupleId);
-    }
-
     @ApiOperation({ summary: 'Обновить посещение' })
     @ApiParam({ name: 'id', example: 'clz123visitid' })
     @ApiBody({ type: UpdateVisitDto })
