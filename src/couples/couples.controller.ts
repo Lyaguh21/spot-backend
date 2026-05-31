@@ -35,7 +35,7 @@ export class CouplesController {
 
     @ApiOperation({ summary: 'Создать пару' })
     @ApiCreatedResponse({ description: 'Созданная пара' })
-    @Post()
+    @Get()
     create(@CurrentUser('id') userId: string) {
         return this.couples.create(userId);
     }
@@ -89,6 +89,7 @@ export class CouplesController {
     }
 
     @ApiOperation({ summary: 'Подписаться на пару' })
+    @ApiOkResponse({ description: 'Успешная подписка на пару' })
     @Post(':id/follow')
     followToCouple(
         @Param('id') coupleId: string,
@@ -100,6 +101,7 @@ export class CouplesController {
     }
 
     @ApiOperation({ summary: 'Отписаться от пары' })
+    @ApiOkResponse({ description: 'Успешная отписка от пары' })
     @Delete(':id/follow')
     unfollowToCouple(
         @Param('id') coupleId: string,
@@ -108,5 +110,15 @@ export class CouplesController {
         return this.users.unfollow(String(user.id), {
             coupleId,
         });
+    }
+
+    @ApiOperation({ summary: 'Получить подписчиков пары' })
+    @ApiParam({ name: 'id', example: 'couple_123' })
+    @ApiOkResponse({ description: 'Список подписчиков пары' })
+    @Get(':id/followers')
+    getFollowers(
+        @Param('id') id: string,
+    ) {
+        return this.couples.getFollowers(id);
     }
 }

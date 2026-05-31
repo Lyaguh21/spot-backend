@@ -435,4 +435,70 @@ export class UsersService {
         return { message: 'Unfollowed couple successfully' };
       }
   }
+
+  async getFollowers(username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.prisma.userSubscription.findMany({
+      where: {
+        targetUserId: user.id,
+      },
+      include: {
+        follower: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getFollowing(username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+    });
+  
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+  
+    const users = await this.prisma.userSubscription.findMany({
+      where: {
+        followerId: user.id,
+      },
+      include: {
+        targetUser: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+  
+    const couples = await this.prisma.coupleSubscription.findMany({
+      where: {
+        followerId: user.id,
+      },
+      include: {
+        targetCouple: true,
+      },
+    });
+  
+    return {
+      users: users.map(item => item.targetUser),
+      couples: couples.map(item => item.targetCouple),
+    };
+  }
 }

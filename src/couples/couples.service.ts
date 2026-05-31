@@ -267,4 +267,30 @@ update(userId, coupleId, dto)
             map: Array.from(placesMap.values()),
         };
     }
+
+    async getFollowers(coupleId: string) {
+        const couple = await this.prisma.couple.findUnique({
+            where: { id: coupleId },
+        });
+
+        if (!couple) {
+            throw new NotFoundException('Couple not found');
+        }
+
+        return this.prisma.coupleSubscription.findMany({
+            where: {
+                targetCoupleId: coupleId,
+            },
+            include: {
+                follower: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        avatarUrl: true,
+                    },
+                },
+            },
+        });
+    }
 }

@@ -42,6 +42,9 @@ export class UsersController {
   }
 
   @Public()
+  @ApiOperation({ summary: 'Получить пользователя по id' })
+  @ApiParam({ name: 'id', example: 'user_123' })
+  @ApiOkResponse({ description: 'Пользователь найден' })
   @Get('id/:id')
   findById(@Param('id') id: string) {
     return this.users.findById(id);
@@ -86,5 +89,25 @@ export class UsersController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.users.unfollow(String(user.id), { username });
+  }
+
+  @ApiOperation({ summary: 'Получить подписчиков пользователя' })
+  @ApiParam({ name: 'username', example: 'alex' })
+  @ApiOkResponse({ description: 'Список подписчиков пользователя' })
+  @Get(':username/followers')
+  getFollowers(
+    @Param('username') username: string,
+  ) {
+    return this.users.getFollowers(username);
+  }
+
+  @ApiOperation({ summary: 'Получить подписки пользователя' })
+  @ApiParam({ name: 'username', example: 'alex' })
+  @ApiOkResponse({ description: 'Список подписок пользователя' })
+  @Get(':username/following')
+  getFollowing(
+    @Param('username') username: string,
+  ) {
+    return this.users.getFollowing(username);
   }
 }
