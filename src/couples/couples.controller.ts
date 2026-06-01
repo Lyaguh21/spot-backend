@@ -82,8 +82,11 @@ export class CouplesController {
     @ApiParam({ name: 'id', example: 'couple_123' })
     @ApiOkResponse({ description: 'Данные пары' })
     @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.couples.findOne(id);
+    findOne(
+        @Param('id') id: string,
+        @CurrentUser('id') userId: string,
+    ) {
+        return this.couples.findOne(id, userId);
     }
 
     @ApiOperation({ summary: 'Получить посещения пары' })
