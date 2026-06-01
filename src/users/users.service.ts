@@ -8,6 +8,7 @@ import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../prisma/prisma.service";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { GetUserVisitsDto } from "./dto/get-user-visits.dto";
+import { PaginationDto } from "./dto/pagination.dto";
 
 @Injectable()
 export class UsersService {
@@ -509,13 +510,30 @@ export class UsersService {
     }
   }
 
-  async getFollowers(username: string) {
+  async getFollowers(username: string, query: PaginationDto) {
     const user = await this.prisma.user.findUnique({
       where: { username },
     });
 
     if (!user) {
       throw new NotFoundException("User not found");
+    }
+
+    const where = {
+      targetUserId: user.id,
+
+      ...(query.search && {
+        follower: {
+          OR: [
+            {
+              username: {
+                contains: query.search,
+                mode: "insensitive" as const,
+              }
+            }
+          ]
+        }
+      })
     }
 
     const followers = await this.prisma.userSubscription.findMany({
@@ -532,9 +550,20 @@ export class UsersService {
           },
         },
       },
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
     });
 
-    return followers.map((item) => item.follower);
+    const total = await this.prisma.userSubscription.count({
+      where
+    })
+
+    return {
+      items: followers.map((item) => item.follower),
+      total,
+      page: query.page,
+      limit: query.limit,
+    }
   }
 
   async getFollowing(username: string) {
