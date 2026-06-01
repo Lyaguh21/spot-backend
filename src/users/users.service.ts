@@ -1,11 +1,53 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { GetUserVisitsDto } from './dto/get-user-visits.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { JwtService } from "@nestjs/jwt";
+import { PrismaService } from "../prisma/prisma.service";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { GetUserVisitsDto } from "./dto/get-user-visits.dto";
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
+    private readonly config: ConfigService,
+  ) {}
+
+  private getAccessSecret() {
+    return this.config.get<string>("JWT_ACCESS_SECRET", { infer: true })!;
+  }
+
+  private async resolveCurrentUserIdFromAccessToken(token?: string) {
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const payload = await this.jwt.verifyAsync<{
+        sub: string;
+        tokenVersion: number;
+      }>(token, {
+        secret: this.getAccessSecret(),
+      });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { tokenVersion: true },
+      });
+
+      if (!user || user.tokenVersion !== payload.tokenVersion) {
+        return null;
+      }
+
+      return payload.sub;
+    } catch {
+      return null;
+    }
+  }
 
   private readonly userProfileSelect = {
     id: true,
@@ -28,7 +70,7 @@ export class UsersService {
       where: {
         userId,
       },
-      distinct: ['placeId'],
+      distinct: ["placeId"],
       select: {
         placeId: true,
       },
@@ -51,7 +93,7 @@ export class UsersService {
     return {
       places: placesCount,
       followers: followersCount,
-      following: followingCount
+      following: followingCount,
     };
   }
 
@@ -66,7 +108,7 @@ export class UsersService {
         avatarUrl: true,
         bio: true,
         visibility: true,
-      
+
         coupleMembers: {
           select: {
             couple: {
@@ -90,19 +132,19 @@ export class UsersService {
         },
       },
     });
-  
+
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
-  
+
     const couple = user.coupleMembers[0]?.couple;
-  
+
     const partner = couple?.members
       .map((m) => m.user)
       .find((u) => u.id !== user.id);
 
-      const stats = await this.getUserStats(user.id);
-  
+    const stats = await this.getUserStats(user.id);
+
     return {
       id: user.id,
       username: user.username,
@@ -111,18 +153,19 @@ export class UsersService {
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       visibility: user.visibility,
-    
-      coupleId: couple?.id ?? null,
-    
-      partner: partner
-      ? {
-          id: partner.id,
-          username: partner.username,
-          name: partner.name,
-          avatarUrl: partner.avatarUrl,
-        }: null,
 
-      stats
+      coupleId: couple?.id ?? null,
+
+      partner: partner
+        ? {
+            id: partner.id,
+            username: partner.username,
+            name: partner.name,
+            avatarUrl: partner.avatarUrl,
+          }
+        : null,
+
+      stats,
     };
   }
 
@@ -140,7 +183,7 @@ export class UsersService {
     //  }
   }
 
-  async findByUsername(username: string) {
+  async findByUsername(username: string, accessToken?: string) {
     const user = await this.prisma.user.findUnique({
       where: { username },
       select: {
@@ -151,7 +194,7 @@ export class UsersService {
         avatarUrl: true,
         bio: true,
         visibility: true,
-      
+
         coupleMembers: {
           select: {
             couple: {
@@ -175,19 +218,34 @@ export class UsersService {
         },
       },
     });
-  
+
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
-  
+
+    const currentUserId =
+      await this.resolveCurrentUserIdFromAccessToken(accessToken);
+    let isFollowing = false;
+
+    if (currentUserId && currentUserId !== user.id) {
+      const existing = await this.prisma.userSubscription.findFirst({
+        where: {
+          followerId: currentUserId,
+          targetUserId: user.id,
+        },
+        select: { id: true },
+      });
+      isFollowing = Boolean(existing);
+    }
+
     const couple = user.coupleMembers[0]?.couple;
-  
+
     const partner = couple?.members
       .map((m) => m.user)
       .find((u) => u.id !== user.id);
 
-      const stats = await this.getUserStats(user.id);
-  
+    const stats = await this.getUserStats(user.id);
+
     return {
       id: user.id,
       username: user.username,
@@ -196,37 +254,36 @@ export class UsersService {
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       visibility: user.visibility,
-    
+
       coupleId: couple?.id ?? null,
-    
+
       partner: partner
-      ? {
-          id: partner.id,
-          username: partner.username,
-          name: partner.name,
-          avatarUrl: partner.avatarUrl,
-        }: null,
-        stats
+        ? {
+            id: partner.id,
+            username: partner.username,
+            name: partner.name,
+            avatarUrl: partner.avatarUrl,
+          }
+        : null,
+      stats,
+      isFollowing,
     };
   }
 
   async findById(id: string) {
-    const user =
-      await this.prisma.user.findUnique({
-        where: { id },
-        include: {
-          coupleMembers: {
-            include: {
-              couple: true,
-            },
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        coupleMembers: {
+          include: {
+            couple: true,
           },
         },
-      });
+      },
+    });
 
     if (!user) {
-      throw new NotFoundException(
-        'User not found',
-      );
+      throw new NotFoundException("User not found");
     }
 
     return {
@@ -237,7 +294,7 @@ export class UsersService {
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       visibility: user.visibility,
-    }
+    };
   }
 
   async getUserVisits(username: string, query: GetUserVisitsDto) {
@@ -258,7 +315,7 @@ export class UsersService {
       skip: (query.page - 1) * query.limit,
       take: query.limit,
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   }
@@ -282,7 +339,7 @@ export class UsersService {
         place: true,
       },
       orderBy: {
-        visitDate: 'desc',
+        visitDate: "desc",
       },
     });
 
@@ -307,133 +364,143 @@ export class UsersService {
   }
 
   async follow(
-    currentUserId: string, 
+    currentUserId: string,
     target: {
-      username?: string; 
-      coupleId?: string 
-    }) {
-
+      username?: string;
+      coupleId?: string;
+    },
+  ) {
     const currentUser = await this.prisma.user.findUnique({
       where: {
-        id: currentUserId 
-      } 
+        id: currentUserId,
+      },
     });
 
     if (!currentUser) {
-      throw new NotFoundException('Current user not found');
+      throw new NotFoundException("Current user not found");
     }
 
-// ? подписка на пользователя
+    // ? подписка на пользователя
 
     if (target.username) {
       const targetUser = await this.prisma.user.findUnique({
         where: {
           username: target.username,
         },
-      })
+      });
 
       if (!targetUser) {
-        throw new NotFoundException('Target user not found');
+        throw new NotFoundException("Target user not found");
       }
 
       if (targetUser.id === currentUserId) {
-        throw new BadRequestException('Cannot follow yourself');
+        throw new BadRequestException("Cannot follow yourself");
       }
 
       const existing = await this.prisma.userSubscription.findFirst({
         where: {
           followerId: currentUserId,
-          targetUserId: targetUser.id 
+          targetUserId: targetUser.id,
         },
-      })
+      });
 
-      return { message: 'Followed user successfully' };
+      if (existing) {
+        throw new BadRequestException("Already following this user");
+      }
+
+      await this.prisma.userSubscription.create({
+        data: {
+          followerId: currentUserId,
+          targetUserId: targetUser.id,
+        },
+      });
+
+      return { message: "Followed user successfully" };
     }
 
-// ? подписка на пару
+    // ? подписка на пару
 
     if (target.coupleId) {
       const couple = await this.prisma.couple.findUnique({
         where: {
           id: target.coupleId,
         },
-      })
+      });
 
       if (!couple) {
-        throw new NotFoundException('Target couple not found');
+        throw new NotFoundException("Target couple not found");
       }
 
       const existing = await this.prisma.coupleSubscription.findFirst({
         where: {
           followerId: currentUserId,
-          targetCoupleId: target.coupleId
-        }
-      })
+          targetCoupleId: target.coupleId,
+        },
+      });
 
       if (existing) {
-        throw new BadRequestException('Already following this couple');
+        throw new BadRequestException("Already following this couple");
       }
 
       await this.prisma.coupleSubscription.create({
         data: {
           followerId: currentUserId,
-          targetCoupleId: target.coupleId
-        }
-      })
+          targetCoupleId: target.coupleId,
+        },
+      });
 
-      return { message: 'Followed couple successfully' };
+      return { message: "Followed couple successfully" };
     }
   }
 
   async unfollow(
-    currentUserId: string, 
+    currentUserId: string,
     target: {
-      username?: string; 
-      coupleId?: string 
-    }) {
+      username?: string;
+      coupleId?: string;
+    },
+  ) {
+    if (target.username) {
+      const targetUser = await this.prisma.user.findUnique({
+        where: {
+          username: target.username,
+        },
+      });
 
-      if (target.username) {
-        const targetUser = await this.prisma.user.findUnique({
-          where: {
-            username: target.username,
-          }
-        })
-
-        if (!targetUser) {
-          throw new NotFoundException('Target user not found');
-        }
-
-        await this.prisma.userSubscription.deleteMany({
-          where: {
-            followerId: currentUserId,
-            targetUserId: targetUser.id
-          }
-        })
-
-
-        return { message: 'Unfollowed user successfully' };
+      if (!targetUser) {
+        throw new NotFoundException("Target user not found");
       }
 
-      if (target.coupleId) {
-        const couple = await this.prisma.couple.findUnique({
-          where: {
-            id: target.coupleId,
-          }
-        })
+      await this.prisma.userSubscription.deleteMany({
+        where: {
+          followerId: currentUserId,
+          targetUserId: targetUser.id,
+        },
+      });
 
-        if (!couple) {
-          throw new NotFoundException('Target couple not found');
-        }
+      return { message: "Unfollowed user successfully" };
+    }
 
-        await this.prisma.coupleSubscription.deleteMany({
-          where: {
-            followerId: currentUserId,
-            targetCoupleId: target.coupleId
-          }
-        })
+    if (target.coupleId) {
+      const couple = await this.prisma.couple.findUnique({
+        where: {
+          id: target.coupleId,
+        },
+      });
 
-        return { message: 'Unfollowed couple successfully' };
+      if (!couple) {
+        throw new NotFoundException("Target couple not found");
       }
+
+      await this.prisma.coupleSubscription.deleteMany({
+        where: {
+          followerId: currentUserId,
+          targetCoupleId: target.coupleId,
+        },
+      });
+
+      return { message: "Unfollowed couple successfully" };
+    }
   }
 
   async getFollowers(username: string) {
@@ -442,10 +509,10 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
-    return this.prisma.userSubscription.findMany({
+    const followers = await this.prisma.userSubscription.findMany({
       where: {
         targetUserId: user.id,
       },
@@ -460,17 +527,19 @@ export class UsersService {
         },
       },
     });
+
+    return followers.map((item) => item.follower);
   }
 
   async getFollowing(username: string) {
     const user = await this.prisma.user.findUnique({
       where: { username },
     });
-  
+
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
-  
+
     const users = await this.prisma.userSubscription.findMany({
       where: {
         followerId: user.id,
@@ -486,7 +555,7 @@ export class UsersService {
         },
       },
     });
-  
+
     const couples = await this.prisma.coupleSubscription.findMany({
       where: {
         followerId: user.id,
@@ -495,10 +564,10 @@ export class UsersService {
         targetCouple: true,
       },
     });
-  
+
     return {
-      users: users.map(item => item.targetUser),
-      couples: couples.map(item => item.targetCouple),
+      users: users.map((item) => item.targetUser),
+      couples: couples.map((item) => item.targetCouple),
     };
   }
 }
