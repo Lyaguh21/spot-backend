@@ -8,24 +8,38 @@ import { UpdateCoupleDto } from './dto/update-couple.dto';
 export class CouplesService {
     constructor(private readonly prisma: PrismaService) {}
 
-    /**
-     * create(userId, dto)
-
-join(userId, inviteCode)
-
-leave(userId)
-
-getById(id)
-
-update(userId, coupleId, dto)
-     */
-
     generateUniqueInviteCode(length: number = 5): string {
         return randomBytes(length)
         .toString('base64')
         .replace(/[+/=]/g, '')
         .slice(0, length)
         .toUpperCase();
+    }
+
+    private async getCoupleStats(coupleId: string) {
+        const places = await this.prisma.visit.findMany({
+            where: {
+                coupleId,
+            },
+            distinct: ['placeId'],
+            select:{
+                placeId: true,
+            }
+        })
+
+        const placesCount = places.length;
+
+        const followersCount = await this.prisma.coupleSubscription.count({
+            where: {
+                targetCoupleId: coupleId,
+            },
+        })
+
+        return {
+            placesCount,
+            followersCount,
+        }
+
     }
 
     async create(userId: string) {
@@ -254,7 +268,7 @@ update(userId, coupleId, dto)
         };
     }
 
-    async findOne(id: string) {
+    async findOne(id: string, currentUserId?: string) {
         const couple = await this.prisma.couple.findUnique({
             where: { 
                 id 
@@ -283,9 +297,24 @@ update(userId, coupleId, dto)
         .map(member => member.user.name)
         .join(' & ');
 
+        const stats = await this.getCoupleStats(couple.id);
+        let isFollowing = false;
+
+        if (currentUserId) {
+            isFollowing = (await this.prisma.coupleSubscription.findFirst({
+                where: {
+                    followerId: currentUserId,
+                    targetCoupleId: couple.id,
+                },
+            })) ? true : false;
+        }
+
+
         return {
             ...couple,
             displayName,
+            ...stats,
+            isFollowing,
         };
     }
 
