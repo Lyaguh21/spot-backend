@@ -24,6 +24,7 @@ import { UsersService } from "./users.service";
 import { GetUserVisitsDto } from "./dto/get-user-visits.dto";
 import { Public } from "src/auth/decorators/public.decorator";
 import type { Request } from "express";
+import { PaginationDto } from "./dto/pagination.dto";
 
 @ApiTags("users")
 @ApiBearerAuth("accessToken")
@@ -106,8 +107,10 @@ export class UsersController {
   @ApiParam({ name: "username", example: "alex" })
   @ApiOkResponse({ description: "Список подписчиков пользователя" })
   @Get(":username/followers")
-  getFollowers(@Param("username") username: string) {
-    return this.users.getFollowers(username);
+  getFollowers(
+    @Param("username") username: string, 
+    @Query() query: PaginationDto) {
+    return this.users.getFollowers(username, query);
   }
 
   @ApiOperation({ summary: "Получить подписки пользователя" })
