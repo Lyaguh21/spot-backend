@@ -293,7 +293,7 @@ export class CouplesService {
             throw new NotFoundException('Couple not found');
         }
 
-        const displayName = couple.members
+        const generatedName = couple.members
         .map(member => member.user.name)
         .join(' & ');
 
@@ -309,10 +309,9 @@ export class CouplesService {
             })) ? true : false;
         }
 
-
         return {
             ...couple,
-            displayName,
+            generatedName,
             ...stats,
             isFollowing,
         };
