@@ -109,7 +109,8 @@ export class UsersController {
   @Get(":username/followers")
   getFollowers(
     @Param("username") username: string, 
-    @Query() query: PaginationDto) {
+    @Query() query: PaginationDto
+  ) {
     return this.users.getFollowers(username, query);
   }
 
@@ -117,7 +118,10 @@ export class UsersController {
   @ApiParam({ name: "username", example: "alex" })
   @ApiOkResponse({ description: "Список подписок пользователя" })
   @Get(":username/following")
-  getFollowing(@Param("username") username: string) {
-    return this.users.getFollowing(username);
+  getFollowing(
+    @Param("username") username: string, 
+    @Query() query: PaginationDto
+) {
+    return this.users.getFollowing(username, query);
   }
 }

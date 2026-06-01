@@ -566,58 +566,112 @@ export class UsersService {
     }
   }
 
-  async getFollowing(username: string) {
+  async getFollowing(username: string, query: PaginationDto) {
     const user = await this.prisma.user.findUnique({
       where: { username },
     });
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new NotFoundException('User not found');
     }
 
-    const users = await this.prisma.userSubscription.findMany({
-      where: {
-        followerId: user.id,
-      },
-      include: {
-        targetUser: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatarUrl: true,
+    const whereUsers: any = {
+      followerId: user.id,
+    };
+
+    const whereCouples: any = {
+      followerId: user.id,
+    };
+
+    if (query.search) {
+      const q = query.search;
+
+      whereUsers.targetUser = {
+        username: {
+          contains: q,
+          mode: 'insensitive',
+        },
+      };
+
+      whereCouples.targetCouple = {
+        members: {
+          some: {
+            user: {
+              username: {
+                contains: q,
+                mode: 'insensitive',
+              },
+            },
           },
         },
-      },
-    });
+      };
+    }
 
-    const couples = await this.prisma.coupleSubscription.findMany({
-      where: {
-        followerId: user.id,
-      },
-      include: {
-        targetCouple: {
-          include: {
-            members: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    username: true,
-                    name: true,
-                    avatarUrl: true,
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-    });
+    const [users, couples, totalUsers, totalCouples] = await Promise.all([
+      this.prisma.userSubscription.findMany({
+        where: whereUsers,
+        include: {
+          targetUser: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+              avatarUrl: true,
+            },
+          },
+        },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+
+      this.prisma.coupleSubscription.findMany({
+        where: whereCouples,
+        include: {
+          targetCouple: {
+            include: {
+              members: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      username: true,
+                      name: true,
+                      avatarUrl: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+
+      this.prisma.userSubscription.count({
+        where: whereUsers,
+      }),
+
+      this.prisma.coupleSubscription.count({
+        where: whereCouples,
+      }),
+    ]);
 
     return {
-      users: users.map((item) => item.targetUser),
-      couples: couples.map((item) => item.targetCouple),
+      items: [
+        ...couples.map(item => ({
+          type: 'COUPLE',
+          ...item.targetCouple,
+        })),
+        ...users.map(item => ({
+          type: 'USER',
+          ...item.targetUser,
+        })),
+      ],
+      total: totalUsers + totalCouples,
+      page: query.page,
+      limit: query.limit,
     };
-  }
+  } 
 }
+
