@@ -18,6 +18,12 @@ type AuthStatusUser = {
   username: string;
   name: string;
   coupleId: string | null;
+  partner: {
+    id: string;
+    username: string;
+    name: string;
+    avatarUrl: string | null;
+  } | null;
 };
 
 @Injectable()
@@ -146,6 +152,22 @@ export class AuthService {
         coupleMembers: {
           select: {
             coupleId: true,
+            couple: {
+              select: {
+                members: {
+                  select: {
+                    user: {
+                      select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        avatarUrl: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -155,12 +177,19 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
+    const couple = user.coupleMembers[0]?.couple;
+
+    const partner = couple?.members
+      .map(member => member.user)
+      .find(partner => partner.id !== user.id) ?? null;
+
     return {
       id: user.id,
       email: user.email,
       username: user.username,
       name: user.name,
       coupleId: user.coupleMembers[0]?.coupleId ?? null,
+      partner
     };
   }
 
