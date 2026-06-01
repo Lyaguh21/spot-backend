@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { randomBytes } from 'crypto';
 import { JoinCoupleDto } from './dto/join-couple.dto';
+import { UpdateCoupleDto } from './dto/update-couple.dto';
 
 @Injectable()
 export class CouplesService {
@@ -55,6 +56,83 @@ update(userId, coupleId, dto)
         });
 
         return couple;
+    }
+
+    async update(dto: UpdateCoupleDto, userId: string, coupleId: string) {
+        const membership = await this.prisma.coupleMember.findFirst({
+            where: {
+                coupleId,
+                userId,
+            },
+        });
+
+        if (!membership) {
+            throw new ForbiddenException(
+                'You are not a member of this couple',
+            );
+        }
+
+        return this.prisma.couple.update({
+            where: {
+                id: coupleId,
+            },
+            data: {
+                bio: dto.bio,
+                isPrivate: dto.isPrivate,
+            },
+        });
+    }
+
+    async coupleLeave(coupleId: string, userId: string) {
+        const membership = await this.prisma.coupleMember.findFirst({
+            where: {
+                coupleId,
+                userId,
+            },
+        });
+
+        if (!membership) {
+            throw new ForbiddenException(
+                'You are not a member of this couple',
+            );
+        }
+
+        await this.prisma.coupleMember.delete({
+            where: {
+                id: membership.id,
+            },
+        });
+
+        const newCouple = await this.prisma.couple.create({
+            data: {
+                inviteCode: this.generateUniqueInviteCode(),
+            },
+        })
+
+        await this.prisma.coupleMember.create({
+            data: {
+                userId,
+                coupleId: newCouple.id,
+            },
+        })
+
+        const memberCount = await this.prisma.coupleMember.count({
+            where: {
+                coupleId,
+            },
+        })
+
+        if (memberCount === 0) {
+            await this.prisma.couple.delete({
+                where: {
+                    id: coupleId,
+                }
+            });
+        }
+
+        return {
+            message: 'Successfully left the couple',
+        };
     }
 
     async join(userId: string, dto: JoinCoupleDto) {

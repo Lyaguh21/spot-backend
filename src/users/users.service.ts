@@ -561,7 +561,22 @@ export class UsersService {
         followerId: user.id,
       },
       include: {
-        targetCouple: true,
+        targetCouple: {
+          include: {
+            members: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                    name: true,
+                    avatarUrl: true,
+                  }
+                }
+              }
+            }
+          }
+        }
       },
     });
 

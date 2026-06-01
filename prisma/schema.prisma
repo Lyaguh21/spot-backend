@@ -57,8 +57,9 @@ model UserSubscription {
 model Couple {
   id String @id @default(uuid())
 
-  description String?
-  inviteCode  String  @unique
+  bio        String?
+  isPrivate  Boolean @default(false)
+  inviteCode String  @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

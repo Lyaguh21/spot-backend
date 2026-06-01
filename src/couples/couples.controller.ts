@@ -4,6 +4,7 @@ import {
     Delete,
     Get,
     Param,
+    Patch,
     Post,
     UseGuards,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import { CouplesService } from './couples.service';
 import { JoinCoupleDto } from './dto/join-couple.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { AuthUser } from 'src/auth/types/auth-user.type';
+import { UpdateCoupleDto } from './dto/update-couple.dto';
 
 @ApiTags('couples')
 @ApiBearerAuth('accessToken')
@@ -58,6 +60,17 @@ export class CouplesController {
         return this.couples.getMyCouple(userId);
     }
 
+    @ApiOperation({ summary: 'Обновить профиль пары' })
+    @ApiOkResponse({ description: 'Информация о паре обновлена' })
+    @Patch(':id')
+    update(
+        @Param('id') coupleId: string,
+        @CurrentUser() user: AuthUser,
+        @Body() dto: UpdateCoupleDto,
+    ) {
+        return this.couples.update(dto, String(user.id), coupleId);
+    }
+
     @ApiOperation({ summary: 'Обновить код приглашения' })
     @ApiCreatedResponse({ description: 'Новый код приглашения' })
     @Post('reset-invite-code')
@@ -86,6 +99,16 @@ export class CouplesController {
     @Get(':id/places')
     getCouplePlaces(@Param('id') id: string,) {
         return this.couples.getCouplePlaces(id);
+    }
+
+    @ApiOperation({ summary: 'Выйти из пары' })
+    @ApiOkResponse({ description: 'Успешный выход из пары' })
+    @Delete(':id')
+    coupleLeave(
+        @Param('id') coupleId: string,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.couples.coupleLeave(coupleId, String(user.id));
     }
 
     @ApiOperation({ summary: 'Подписаться на пару' })
