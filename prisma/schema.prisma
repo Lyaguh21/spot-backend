@@ -148,13 +148,17 @@ model Visit {
 
   description String?
 
-  rating Int?
+  ratings Json @default("[]")
 
   isFavorite Boolean @default(false)
 
-  visitDate DateTime
+  photoURL String @default("")
 
-  visibility Visibility @default(PUBLIC)
+  icon String @default("")
+
+  color String @default("")
+
+  visitDate DateTime
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

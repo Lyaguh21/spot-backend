@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Visibility } from '@prisma/client';
 import { OwnerType } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
+    IsArray,
     IsBoolean,
     IsDateString,
     IsEnum,
@@ -10,7 +11,20 @@ import {
     IsString,
     Max,
     Min,
+    ValidateNested,
 } from 'class-validator';
+
+export class VisitRatingDto {
+    @ApiProperty({ example: 'nickname' })
+    @IsString()
+    nickname!: string;
+
+    @ApiProperty({ example: 5, minimum: 1, maximum: 5 })
+    @IsNumber()
+    @Min(1)
+    @Max(5)
+    rating!: number;
+}
 
 export class CreateVisitDto {
     
@@ -45,10 +59,20 @@ export class CreateVisitDto {
 
     // Visit
 
+    @ApiPropertyOptional({
+        enum: OwnerType,
+        default: OwnerType.USER,
+        example: OwnerType.USER,
+        description: 'USER for personal visits, COUPLE for couple visits',
+    })
+    @IsOptional()
     @IsEnum(OwnerType)
-    ownerType!: OwnerType;
+    ownerType?: OwnerType;
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({
+        example: 'clz123coupleid',
+        description: 'Required only when ownerType is COUPLE',
+    })
     @IsOptional()
     @IsString()
     coupleId?: string;
@@ -58,21 +82,40 @@ export class CreateVisitDto {
     @IsString()
     description?: string;
 
-    @ApiProperty({ example: 5, minimum: 1, maximum: 5 })
-    @Min(1)
-    @Max(5)
-    rating?: number;
+    @ApiPropertyOptional({
+        type: [VisitRatingDto],
+        example: [
+            { nickname: 'first_user', rating: 5 },
+            { nickname: 'second_user', rating: 4 },
+        ],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => VisitRatingDto)
+    ratings?: VisitRatingDto[];
 
-    @ApiProperty({ example: true })
+    @ApiPropertyOptional({ example: false, default: false })
+    @IsOptional()
     @IsBoolean()
-    isFavorite!: boolean;
+    isFavorite?: boolean;
+
+    @ApiPropertyOptional({ example: '', default: '' })
+    @IsOptional()
+    @IsString()
+    photoURL?: string;
+
+    @ApiPropertyOptional({ example: '', default: '' })
+    @IsOptional()
+    @IsString()
+    icon?: string;
+
+    @ApiPropertyOptional({ example: '', default: '' })
+    @IsOptional()
+    @IsString()
+    color?: string;
 
     @ApiProperty({ example: '2026-05-30T10:00:00.000Z', format: 'date-time' })
     @IsDateString()
     visitDate!: string;
-
-    @ApiPropertyOptional({ example: Visibility.PUBLIC, enum: Visibility })
-    @IsOptional()
-    @IsEnum(Visibility)
-    visibility?: Visibility;
 }

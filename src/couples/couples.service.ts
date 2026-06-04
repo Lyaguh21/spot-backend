@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { randomBytes } from 'crypto';
 import { JoinCoupleDto } from './dto/join-couple.dto';
 import { UpdateCoupleDto } from './dto/update-couple.dto';
+import { toVisitResponse } from 'src/visits/visit-response.mapper';
 
 @Injectable()
 export class CouplesService {
@@ -318,7 +319,7 @@ export class CouplesService {
     }
 
     async findVisits(coupleId: string) {
-        return this.prisma.visit.findMany({
+        const visits = await this.prisma.visit.findMany({
             where: {
                 coupleId,
             },
@@ -329,6 +330,8 @@ export class CouplesService {
                 visitDate: 'desc',
             },
         });
+
+        return visits.map(toVisitResponse);
     }
 
     async getCouplePlaces(coupleId: string) {

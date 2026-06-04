@@ -9,6 +9,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { GetUserVisitsDto } from "./dto/get-user-visits.dto";
 import { PaginationDto } from "./dto/pagination.dto";
+import { toVisitResponse } from "src/visits/visit-response.mapper";
 
 @Injectable()
 export class UsersService {
@@ -315,9 +316,12 @@ export class UsersService {
       throw new NotFoundException();
     }
 
-    return this.prisma.visit.findMany({
+    const visits = await this.prisma.visit.findMany({
       where: {
         userId: user.id,
+      },
+      include: {
+        place: true,
       },
       skip: (query.page - 1) * query.limit,
       take: query.limit,
@@ -325,6 +329,8 @@ export class UsersService {
         createdAt: "desc",
       },
     });
+
+    return visits.map(toVisitResponse);
   }
 
   async getUserPlaces(username: string, query: GetUserVisitsDto) {
@@ -530,16 +536,20 @@ export class UsersService {
                 contains: query.search,
                 mode: "insensitive" as const,
               }
-            }
+            },
+            {
+              name: {
+                contains: query.search,
+                mode: "insensitive" as const,
+              },
+            },
           ]
         }
       })
     }
 
     const followers = await this.prisma.userSubscription.findMany({
-      where: {
-        targetUserId: user.id,
-      },
+      where,
       include: {
         follower: {
           select: {
@@ -587,20 +597,40 @@ export class UsersService {
       const q = query.search;
 
       whereUsers.targetUser = {
-        username: {
-          contains: q,
-          mode: 'insensitive',
-        },
+        OR: [
+          {
+            username: {
+              contains: q,
+              mode: 'insensitive',
+            },
+          },
+          {
+            name: {
+              contains: q,
+              mode: 'insensitive',
+            },
+          },
+        ],
       };
 
       whereCouples.targetCouple = {
         members: {
           some: {
             user: {
-              username: {
-                contains: q,
-                mode: 'insensitive',
-              },
+              OR: [
+                {
+                  username: {
+                    contains: q,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  name: {
+                    contains: q,
+                    mode: 'insensitive',
+                  },
+                },
+              ],
             },
           },
         },

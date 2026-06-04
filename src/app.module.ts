@@ -1,14 +1,14 @@
-import { Module } from '@nestjs/common';
-import { PrismaModule } from './prisma/prisma.module';
-import { ConfigModule } from '@nestjs/config';
-import { AuthModule } from './auth/auth.module';
-import Joi from 'joi';
-import { JwtAccessGuard } from './auth/guards/jwt-access.guard';
-import { UsersModule } from './users/users.module';
+import { Module } from "@nestjs/common";
+import { PrismaModule } from "./prisma/prisma.module";
+import { ConfigModule } from "@nestjs/config";
+import { AuthModule } from "./auth/auth.module";
+import Joi from "joi";
+import { JwtAccessGuard } from "./auth/guards/jwt-access.guard";
+import { UsersModule } from "./users/users.module";
 
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { VisitsModule } from './visits/visits.module';
-import { CouplesModule } from './couples/couples.module';
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { VisitsModule } from "./visits/visits.module";
+import { CouplesModule } from "./couples/couples.module";
 
 @Module({
   imports: [
@@ -33,13 +33,13 @@ import { CouplesModule } from './couples/couples.module';
   ],
   providers: [
     {
-      provide: 'APP_GUARD',
+      provide: "APP_GUARD",
       useClass: JwtAccessGuard,
     },
-    {
-      provide: 'APP_GUARD',
-      useClass: ThrottlerGuard,
-    },
+    // {
+    //   provide: "APP_GUARD",
+    //   useClass: ThrottlerGuard,
+    // },
   ],
 })
 export class AppModule {}

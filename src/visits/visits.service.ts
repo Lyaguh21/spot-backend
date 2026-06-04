@@ -1,12 +1,26 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateVisitDto } from './dto/create-visit.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Visibility, Place, OwnerType } from '@prisma/client';
+import { Place, OwnerType, Prisma } from '@prisma/client';
 import { UpdateVisitDto } from './dto/update-visit.dto';
+import { toVisitResponse } from './visit-response.mapper';
 
 @Injectable()
 export class VisitsService {
     constructor(private readonly prisma: PrismaService) {}
+
+    private toRatingsJson(
+        ratings?: { nickname: string; rating: number }[],
+    ): Prisma.InputJsonValue | undefined {
+        if (!ratings) {
+            return undefined;
+        }
+
+        return ratings.map(({ nickname, rating }) => ({
+            nickname,
+            rating,
+        })) as Prisma.InputJsonValue;
+    }
     
     async create(
         currentUserId: string,
@@ -38,8 +52,9 @@ export class VisitsService {
 
         let userId: string | null = null;
         let coupleId: string | null = null;
+        const ownerType = dto.ownerType ?? OwnerType.USER;
 
-        switch (dto.ownerType) {
+        switch (ownerType) {
             case OwnerType.USER:
                 userId = currentUserId;
                 break;
@@ -77,23 +92,25 @@ export class VisitsService {
         const visit = await this.prisma.visit.create({
             data: {
                 placeId: place.id,
-                ownerType: dto.ownerType,
+                ownerType,
                 userId,
                 coupleId,
 
                 description: dto.description,
-                rating: dto.rating ?? null,
+                ratings: this.toRatingsJson(dto.ratings) ?? [],
                 isFavorite: dto.isFavorite ?? false,
+                photoURL: dto.photoURL ?? '',
+                icon: dto.icon ?? '',
+                color: dto.color ?? '',
 
                 visitDate: new Date(dto.visitDate),
-                visibility: dto.visibility ?? Visibility.PUBLIC,
             },
             include: {
                 place: true,
             },
         });
 
-        return visit;
+        return toVisitResponse(visit);
     }
 
     async findOne(id: string) {
@@ -118,7 +135,7 @@ export class VisitsService {
             throw new NotFoundException('Visit not found');
         }
 
-        return visit;
+        return toVisitResponse(visit);
     }
 
     async update(userId: string, visitId: string, dto: UpdateVisitDto) {
@@ -136,18 +153,25 @@ export class VisitsService {
             throw new ForbiddenException('Unauthorized');
         }
 
-        return this.prisma.visit.update({
+        const updatedVisit = await this.prisma.visit.update({
             where: {
                 id: visitId,
             },
             data: {
                 description: dto.description,
-                rating: dto.rating,
+                ratings: this.toRatingsJson(dto.ratings),
                 isFavorite: dto.isFavorite,
-                visibility: dto.visibility,
+                photoURL: dto.photoURL,
+                icon: dto.icon,
+                color: dto.color,
                 visitDate: dto.visitDate ? new Date(dto.visitDate) : undefined,
-            }
-        })
+            },
+            include: {
+                place: true,
+            },
+        });
+
+        return toVisitResponse(updatedVisit);
     }
 
     async delete(userId: string, visitId: string) {
