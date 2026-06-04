@@ -23,10 +23,10 @@ type VisitWithPlace = {
     };
 };
 
-function toPlaceResponse(place: VisitWithPlace['place']) {
+function toPlaceResponse(place: VisitWithPlace['place'], title = place.title) {
     return {
         ...(place.externalId ? { externalId: place.externalId } : {}),
-        title: place.title,
+        title,
         lat: place.lat,
         lng: place.lng,
         ...(place.address ? { address: place.address } : {}),
@@ -82,24 +82,35 @@ export function toPlacesWithVisitsResponse(visits: VisitWithPlace[]) {
         {
             place: ReturnType<typeof toPlaceResponse>;
             visits: ReturnType<typeof toVisitOnlyResponse>[];
+            firstVisitDate: Date;
         }
     >();
 
     for (const visit of visits) {
-        const placeKey =
-            visit.place.id ?? visit.placeId ?? `${visit.place.lat}:${visit.place.lng}:${visit.place.title}`;
+        const placeKey = `${visit.place.lat}:${visit.place.lng}`;
 
         if (!placesMap.has(placeKey)) {
             placesMap.set(placeKey, {
-                place: toPlaceResponse(visit.place),
+                place: toPlaceResponse(visit.place, visit.title),
                 visits: [],
+                firstVisitDate: visit.visitDate,
             });
         }
 
-        placesMap.get(placeKey)!.visits.push(toVisitOnlyResponse(visit));
+        const placeGroup = placesMap.get(placeKey)!;
+
+        if (visit.visitDate < placeGroup.firstVisitDate) {
+            placeGroup.place = toPlaceResponse(visit.place, visit.title);
+            placeGroup.firstVisitDate = visit.visitDate;
+        }
+
+        placeGroup.visits.push(toVisitOnlyResponse(visit));
     }
 
     return {
-        map: Array.from(placesMap.values()),
+        map: Array.from(placesMap.values()).map(({ place, visits }) => ({
+            place,
+            visits,
+        })),
     };
 }

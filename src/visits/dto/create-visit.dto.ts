@@ -8,9 +8,9 @@ import {
     IsEnum,
     IsNumber,
     IsOptional,
+    IsPositive,
     IsString,
     Max,
-    Min,
     ValidateNested,
 } from 'class-validator';
 
@@ -19,9 +19,9 @@ export class VisitRatingDto {
     @IsString()
     nickname!: string;
 
-    @ApiProperty({ example: 5, minimum: 1, maximum: 5 })
+    @ApiProperty({ example: 5, minimum: 0, maximum: 5 })
     @IsNumber()
-    @Min(1)
+    @IsPositive()
     @Max(5)
     rating!: number;
 }

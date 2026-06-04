@@ -38,6 +38,18 @@ export class VisitsService {
         }
 
         if (!place) {
+            place = await this.prisma.place.findFirst({
+                where: {
+                    lat: dto.lat,
+                    lng: dto.lng,
+                },
+                orderBy: {
+                    createdAt: 'asc',
+                },
+            });
+        }
+
+        if (!place) {
             place = await this.prisma.place.create({
                 data: {
                     externalId: dto.externalId,

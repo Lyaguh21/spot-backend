@@ -5,9 +5,9 @@ import {
     IsBoolean,
     IsNumber,
     IsOptional,
+    IsPositive,
     IsString,
     Max,
-    Min,
     ValidateNested,
 } from 'class-validator';
 
@@ -16,9 +16,9 @@ export class UpdateVisitRatingDto {
     @IsString()
     nickname!: string;
 
-    @ApiPropertyOptional({ example: 5, minimum: 1, maximum: 5 })
+    @ApiPropertyOptional({ example: 5, minimum: 0, maximum: 5 })
     @IsNumber()
-    @Min(1)
+    @IsPositive()
     @Max(5)
     rating!: number;
 }
