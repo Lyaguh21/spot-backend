@@ -1,8 +1,10 @@
 import { OwnerType } from '@prisma/client';
 
 type VisitWithPlace = {
+    placeId?: string;
     ownerType: OwnerType;
     coupleId?: string | null;
+    title: string;
     description?: string | null;
     ratings: unknown;
     isFavorite: boolean;
@@ -11,6 +13,7 @@ type VisitWithPlace = {
     color: string;
     visitDate: Date;
     place: {
+        id?: string;
         externalId?: string | null;
         title: string;
         lat: number;
@@ -19,6 +22,17 @@ type VisitWithPlace = {
         websiteUrl?: string | null;
     };
 };
+
+function toPlaceResponse(place: VisitWithPlace['place']) {
+    return {
+        ...(place.externalId ? { externalId: place.externalId } : {}),
+        title: place.title,
+        lat: place.lat,
+        lng: place.lng,
+        ...(place.address ? { address: place.address } : {}),
+        ...(place.websiteUrl ? { websiteUrl: place.websiteUrl } : {}),
+    };
+}
 
 function formatRatings(ratings: unknown) {
     if (!Array.isArray(ratings)) {
@@ -38,24 +52,54 @@ function formatRatings(ratings: unknown) {
     });
 }
 
-export function toVisitResponse(visit: VisitWithPlace) {
+function toVisitOnlyResponse(visit: VisitWithPlace) {
     return {
         ownerType: visit.ownerType,
         ...(visit.ownerType === OwnerType.COUPLE && visit.coupleId
             ? { coupleId: visit.coupleId }
             : {}),
-        ...(visit.place.externalId ? { externalId: visit.place.externalId } : {}),
-        title: visit.place.title,
-        lat: visit.place.lat,
-        lng: visit.place.lng,
-        ...(visit.place.address ? { address: visit.place.address } : {}),
-        ...(visit.place.websiteUrl ? { websiteUrl: visit.place.websiteUrl } : {}),
-        ...(visit.description ? { description: visit.description } : {}),
+        title: visit.title,
+        description: visit.description ?? '',
         ratings: formatRatings(visit.ratings),
         isFavorite: visit.isFavorite,
         photoURL: visit.photoURL,
         icon: visit.icon,
         color: visit.color,
         visitDate: visit.visitDate.toISOString(),
+    };
+}
+
+export function toVisitResponse(visit: VisitWithPlace) {
+    return {
+        ...toPlaceResponse(visit.place),
+        ...toVisitOnlyResponse(visit),
+    };
+}
+
+export function toPlacesWithVisitsResponse(visits: VisitWithPlace[]) {
+    const placesMap = new Map<
+        string,
+        {
+            place: ReturnType<typeof toPlaceResponse>;
+            visits: ReturnType<typeof toVisitOnlyResponse>[];
+        }
+    >();
+
+    for (const visit of visits) {
+        const placeKey =
+            visit.place.id ?? visit.placeId ?? `${visit.place.lat}:${visit.place.lng}:${visit.place.title}`;
+
+        if (!placesMap.has(placeKey)) {
+            placesMap.set(placeKey, {
+                place: toPlaceResponse(visit.place),
+                visits: [],
+            });
+        }
+
+        placesMap.get(placeKey)!.visits.push(toVisitOnlyResponse(visit));
+    }
+
+    return {
+        map: Array.from(placesMap.values()),
     };
 }

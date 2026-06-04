@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { randomBytes } from 'crypto';
 import { JoinCoupleDto } from './dto/join-couple.dto';
 import { UpdateCoupleDto } from './dto/update-couple.dto';
-import { toVisitResponse } from 'src/visits/visit-response.mapper';
+import { toPlacesWithVisitsResponse } from 'src/visits/visit-response.mapper';
 
 @Injectable()
 export class CouplesService {
@@ -331,7 +331,7 @@ export class CouplesService {
             },
         });
 
-        return visits.map(toVisitResponse);
+        return toPlacesWithVisitsResponse(visits);
     }
 
     async getCouplePlaces(coupleId: string) {
@@ -357,24 +357,7 @@ export class CouplesService {
             },
         });
     
-        const placesMap = new Map();
-    
-        for (const visit of visits) {
-            if (!placesMap.has(visit.place.id)) {
-                placesMap.set(visit.place.id, {
-                    place: visit.place,
-                    visits: [],
-                });
-            }
-    
-            const { place, ...visitWithoutPlace } = visit;
-    
-            placesMap.get(visit.place.id).visits.push(visitWithoutPlace);
-        }
-    
-        return {
-            map: Array.from(placesMap.values()),
-        };
+        return toPlacesWithVisitsResponse(visits);
     }
 
     async getFollowers(coupleId: string) {

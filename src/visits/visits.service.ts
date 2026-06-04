@@ -96,6 +96,7 @@ export class VisitsService {
                 userId,
                 coupleId,
 
+                title: dto.title,
                 description: dto.description,
                 ratings: this.toRatingsJson(dto.ratings) ?? [],
                 isFavorite: dto.isFavorite ?? false,
@@ -158,6 +159,7 @@ export class VisitsService {
                 id: visitId,
             },
             data: {
+                title: dto.title,
                 description: dto.description,
                 ratings: this.toRatingsJson(dto.ratings),
                 isFavorite: dto.isFavorite,

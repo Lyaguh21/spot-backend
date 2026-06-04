@@ -9,7 +9,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { GetUserVisitsDto } from "./dto/get-user-visits.dto";
 import { PaginationDto } from "./dto/pagination.dto";
-import { toVisitResponse } from "src/visits/visit-response.mapper";
+import { toPlacesWithVisitsResponse } from "src/visits/visit-response.mapper";
 
 @Injectable()
 export class UsersService {
@@ -323,14 +323,12 @@ export class UsersService {
       include: {
         place: true,
       },
-      skip: (query.page - 1) * query.limit,
-      take: query.limit,
       orderBy: {
-        createdAt: "desc",
+        visitDate: "desc",
       },
     });
 
-    return visits.map(toVisitResponse);
+    return toPlacesWithVisitsResponse(visits);
   }
 
   async getUserPlaces(username: string, query: GetUserVisitsDto) {
@@ -356,24 +354,7 @@ export class UsersService {
       },
     });
 
-    const placesMap = new Map();
-
-    for (const visit of visits) {
-      if (!placesMap.has(visit.place.id)) {
-        placesMap.set(visit.place.id, {
-          place: visit.place,
-          visits: [],
-        });
-      }
-
-      const { place, ...visitWithoutPlace } = visit;
-
-      placesMap.get(visit.place.id).visits.push(visitWithoutPlace);
-    }
-
-    return {
-      map: Array.from(placesMap.values()),
-    };
+    return toPlacesWithVisitsResponse(visits);
   }
 
   async follow(

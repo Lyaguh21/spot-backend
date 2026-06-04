@@ -24,6 +24,11 @@ export class UpdateVisitRatingDto {
 }
 
 export class UpdateVisitDto {
+    @ApiPropertyOptional({ example: 'Big Kremlin Palace' })
+    @IsOptional()
+    @IsString()
+    title?: string;
+
     @ApiPropertyOptional({ example: 'Good place for walking' })
     @IsOptional()
     @IsString()

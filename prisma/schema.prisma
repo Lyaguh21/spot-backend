@@ -146,6 +146,8 @@ model Visit {
   coupleId String?
   couple   Couple? @relation("CoupleVisits", fields: [coupleId], references: [id])
 
+  title String
+
   description String?
 
   ratings Json @default("[]")
