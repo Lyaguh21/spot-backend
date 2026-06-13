@@ -9,6 +9,7 @@ import { UsersModule } from "./users/users.module";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { VisitsModule } from "./visits/visits.module";
 import { CouplesModule } from "./couples/couples.module";
+import { FeedModule } from "./feed/feed.module";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { CouplesModule } from "./couples/couples.module";
     UsersModule,
     VisitsModule,
     CouplesModule,
+    FeedModule,
   ],
   providers: [
     {
