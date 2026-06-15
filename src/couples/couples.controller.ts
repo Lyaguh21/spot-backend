@@ -25,6 +25,7 @@ import { JoinCoupleDto } from './dto/join-couple.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { AuthUser } from 'src/auth/types/auth-user.type';
 import { UpdateCoupleDto } from './dto/update-couple.dto';
+import { Public } from 'src/auth/decorators/public.decorator';
 
 @ApiTags('couples')
 @ApiBearerAuth('accessToken')
@@ -78,6 +79,7 @@ export class CouplesController {
         return this.couples.resetInviteCode(userId);
     }
 
+    @Public()
     @ApiOperation({ summary: 'Получить пару по id' })
     @ApiParam({ name: 'id', example: 'couple_123' })
     @ApiOkResponse({ description: 'Данные пары' })
@@ -89,6 +91,7 @@ export class CouplesController {
         return this.couples.findOne(id, userId);
     }
 
+    @Public()
     @ApiOperation({ summary: 'Получить посещения пары' })
     @ApiParam({ name: 'id', example: 'couple_123' })
     @ApiOkResponse({ description: 'Список посещений пары' })
@@ -97,6 +100,7 @@ export class CouplesController {
         return this.couples.findVisits(id);
     }
 
+    @Public()
     @ApiOperation({ summary: 'Получить места, которые посетила пара' })
     @ApiOkResponse({ description: 'Список мест, которые посетила пара' })
     @Get(':id/places')

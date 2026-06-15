@@ -15,6 +15,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from "@nestjs/swagger";
 import { CurrentUser } from "src/auth/decorators/current-user.decorator";
@@ -31,6 +32,18 @@ import { PaginationDto } from "./dto/pagination.dto";
 @Controller("users")
 export class UsersController {
   constructor(private readonly users: UsersService) {}
+
+  @ApiOperation({ summary: 'Поиск пользователей' })
+  @ApiOkResponse({ description: 'Список пользователей' })
+  @ApiQuery({ name: "page", required: false, type: Number, example: 1 })
+  @ApiQuery({ name: "limit", required: false, type: Number, example: 20 })
+  @ApiQuery({ name: "search", required: false, type: String, example: "user" })
+  @Get('search')
+  searchUsers(
+    @Query() query: PaginationDto,
+  ) {
+    return this.users.searchUsers(query);
+  }
 
   @ApiOperation({ summary: "Получить мой профиль" })
   @Get("me")
@@ -103,25 +116,33 @@ export class UsersController {
     return this.users.unfollow(String(user.id), { username });
   }
 
+  @Public()
   @ApiOperation({ summary: "Получить подписчиков пользователя" })
-  @ApiParam({ name: "username", example: "alex" })
+  @ApiParam({ name: "username", example: "user_123" })
   @ApiOkResponse({ description: "Список подписчиков пользователя" })
+  @ApiQuery({ name: "page", required: false, type: Number, example: 1 })
+  @ApiQuery({ name: "limit", required: false, type: Number, example: 20 })
+  @ApiQuery({ name: "search", required: false, type: String, example: "user" })
   @Get(":username/followers")
   getFollowers(
-    @Param("username") username: string, 
-    @Query() query: PaginationDto
+    @Param("username") username: string,
+    @Query() query: PaginationDto,
   ) {
     return this.users.getFollowers(username, query);
   }
 
+  @Public()
   @ApiOperation({ summary: "Получить подписки пользователя" })
-  @ApiParam({ name: "username", example: "alex" })
+  @ApiParam({ name: "username", example: "user_123" })
   @ApiOkResponse({ description: "Список подписок пользователя" })
+  @ApiQuery({ name: "page", required: false, type: Number, example: 1 })
+  @ApiQuery({ name: "limit", required: false, type: Number, example: 20 })
+  @ApiQuery({ name: "search", required: false, type: String, example: "user" })
   @Get(":username/following")
   getFollowing(
-    @Param("username") username: string, 
-    @Query() query: PaginationDto
-) {
+    @Param("username") username: string,
+    @Query() query: PaginationDto,
+  ) {
     return this.users.getFollowing(username, query);
   }
 }

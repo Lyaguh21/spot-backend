@@ -683,6 +683,53 @@ export class UsersService {
       page: query.page,
       limit: query.limit,
     };
-  } 
+  }
+
+  async searchUsers(query: PaginationDto) {
+    const where = {
+      ...(query.search && {
+        OR: [
+          {
+            username: {
+              contains: query.search,
+              mode: 'insensitive' as const,
+            },
+          },
+          {
+            name: {
+              contains: query.search,
+              mode: 'insensitive' as const,
+            },
+          },
+        ],
+      }),
+    };
+
+    const users = await this.prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        avatarUrl: true,
+      },
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+      orderBy: {
+        username: 'asc',
+      },
+    });
+
+    const total = await this.prisma.user.count({
+      where,
+    });
+
+    return {
+      items: users,
+      total,
+      page: query.page,
+      limit: query.limit,
+    };
+  }
 }
 
