@@ -17,12 +17,14 @@ type AuthStatusUser = {
   email: string;
   username: string;
   name: string;
+  role: string;
   coupleId: string | null;
   partner: {
     id: string;
     username: string;
     name: string;
     avatarUrl: string | null;
+    role: string;
   } | null;
 };
 
@@ -78,6 +80,7 @@ export class AuthService {
         email: true,
         username: true,
         name: true,
+        role: true,
         tokenVersion: true,
       },
     });
@@ -90,6 +93,7 @@ export class AuthService {
       email: user.email,
       username: user.username,
       name: user.name,
+      role: user.role
     };
 
     return {
@@ -109,6 +113,7 @@ export class AuthService {
         email: true,
         username: true,
         name: true,
+        role: true,
         passwordHash: true,
         tokenVersion: true,
       },
@@ -124,6 +129,7 @@ export class AuthService {
       email: user.email,
       username: user.username,
       name: user.name,
+      role: user.role
     };
 
     const tokens = await this.issueTokens(user.id, user.email, user.tokenVersion);
@@ -149,6 +155,7 @@ export class AuthService {
         email: true,
         username: true,
         name: true,
+        role: true,
         coupleMembers: {
           select: {
             coupleId: true,
@@ -162,6 +169,7 @@ export class AuthService {
                         username: true,
                         name: true,
                         avatarUrl: true,
+                        role: true,
                       },
                     },
                   },
@@ -188,6 +196,7 @@ export class AuthService {
       email: user.email,
       username: user.username,
       name: user.name,
+      role: user.role,
       coupleId: user.coupleMembers[0]?.coupleId ?? null,
       partner
     };
