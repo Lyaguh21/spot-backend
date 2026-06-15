@@ -16,6 +16,8 @@ model User {
   bio        String?
   visibility Visibility @default(PUBLIC)
 
+  role UserRole @default(USER)
+
   coupleMembers CoupleMember[]
 
   // подписки на пользователей
@@ -37,6 +39,11 @@ model User {
   updatedAt DateTime @updatedAt
 
   isDeleted Boolean @default(false)
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 model UserSubscription {

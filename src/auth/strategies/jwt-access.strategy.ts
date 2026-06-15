@@ -37,6 +37,7 @@ export class JwtAccessStrategy extends PassportStrategy(
         id: payload.sub,
       },
       select: {
+        role: true,
         email: true,
         username: true,
         name: true,
@@ -53,6 +54,7 @@ export class JwtAccessStrategy extends PassportStrategy(
       email: user.email,
       username: user.username,
       name: user.name,
+      role: user.role,
     };
   }
 }

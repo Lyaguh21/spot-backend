@@ -10,6 +10,7 @@ import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { VisitsModule } from "./visits/visits.module";
 import { CouplesModule } from "./couples/couples.module";
 import { FeedModule } from "./feed/feed.module";
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { FeedModule } from "./feed/feed.module";
     VisitsModule,
     CouplesModule,
     FeedModule,
+    AdminModule,
   ],
   providers: [
     {
