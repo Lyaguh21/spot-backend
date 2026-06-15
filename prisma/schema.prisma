@@ -39,6 +39,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   isDeleted Boolean @default(false)
+
+  bugReports BugReport[]
 }
 
 enum UserRole {
@@ -176,4 +178,20 @@ model Visit {
 enum Visibility {
   PRIVATE
   PUBLIC
+}
+
+model BugReport {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  title       String
+  description String
+
+  type String
+
+  photoUrl String?
+
+  createdAt DateTime @default(now())
 }

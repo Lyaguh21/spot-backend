@@ -137,4 +137,22 @@ export class AdminService {
             };
         });
     }
+
+    async getBugReports() {
+        return this.prisma.bugReport.findMany({
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        avatarUrl: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+    }
 }

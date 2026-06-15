@@ -15,16 +15,7 @@ export class AdminController {
    constructor(private readonly admin: AdminService) {}
 
    @ApiOperation({ summary: 'Получить сводную статистику админки' })
-   @ApiOkResponse({
-      description: 'Общая статистика',
-      schema: {
-         example: {
-            users: 128,
-            couples: 42,
-            places: 319,
-         },
-      },
-   })
+   @ApiOkResponse({description: 'Общая статистика'})
    @Get('stats')
    stats() {
       return this.admin.stats();
@@ -42,5 +33,12 @@ export class AdminController {
    @Get('couples')
    getCouples() {
       return this.admin.getCoupleStats();
+   }
+
+   @ApiOperation({ summary: 'Получить список баг-репортов' })
+   @ApiOkResponse({description: 'Список баг-репортов'})
+   @Get('bug-reports')
+   getBugReports() {
+      return this.admin.getBugReports();
    }
 }

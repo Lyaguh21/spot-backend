@@ -26,6 +26,7 @@ import { GetUserVisitsDto } from "./dto/get-user-visits.dto";
 import { Public } from "src/auth/decorators/public.decorator";
 import type { Request } from "express";
 import { PaginationDto } from "./dto/pagination.dto";
+import { CreateBugReportDto } from "./dto/create-bug-report.dto";
 
 @ApiTags("users")
 @ApiBearerAuth("accessToken")
@@ -145,4 +146,16 @@ export class UsersController {
   ) {
     return this.users.getFollowing(username, query);
   }
+
+  @ApiOperation({ summary: "Создать баг-репорт" })
+  @ApiBody({ type: CreateBugReportDto })
+  @ApiOkResponse({ description: "Баг-репорт успешно создан" })
+  @Post('bug-reports')
+  createBugReport(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateBugReportDto,
+  ) {
+    return this.users.createBugReport(user.id, dto);
+  }
 }
+

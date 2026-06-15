@@ -10,6 +10,7 @@ import { UpdateUserDto } from "./dto/update-user.dto";
 import { GetUserVisitsDto } from "./dto/get-user-visits.dto";
 import { PaginationDto } from "./dto/pagination.dto";
 import { toPlacesWithVisitsResponse } from "src/visits/visit-response.mapper";
+import { CreateBugReportDto } from "./dto/create-bug-report.dto";
 
 @Injectable()
 export class UsersService {
@@ -730,6 +731,18 @@ export class UsersService {
       page: query.page,
       limit: query.limit,
     };
+  }
+
+  async createBugReport(userId: string, dto: CreateBugReportDto) {
+    return this.prisma.bugReport.create({
+      data: {
+        userId,
+        title: dto.title,
+        description: dto.description,
+        type: dto.type,
+        photoUrl: dto.photoUrl,
+      },
+    });
   }
 }
 
