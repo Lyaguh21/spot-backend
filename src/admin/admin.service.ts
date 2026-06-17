@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -94,11 +94,9 @@ export class AdminService {
             },
         });
 
-        if (!couples.length) {
-            return [];
-        }
+        const filteredCouples = couples.filter((c) => c.members.length === 2);
 
-        const coupleIds = couples.map((couple) => couple.id);
+        const coupleIds = filteredCouples.map((couple) => couple.id);
 
         const uniqueCoupleVisits = await this.prisma.visit.findMany({
             where: {
@@ -126,8 +124,8 @@ export class AdminService {
             );
         }
 
-        return couples.map((couple) => {
-            const members = couple.members.map((member) => member.user).slice(0, 2);
+        return filteredCouples.map((couple) => {
+            const members = couple.members.map((m) => m.user);
 
             return {
                 id: couple.id,
@@ -155,4 +153,22 @@ export class AdminService {
             },
         });
     }
+
+    async deleteBugReport(id: string) {
+        const report = await this.prisma.bugReport.findUnique({
+            where: { id },
+        });
+
+        if (!report) {
+            throw new NotFoundException('Bug report not found');
+        }
+
+        await this.prisma.bugReport.delete({
+            where: { id },
+        });
+
+        return {
+            message: 'Bug report deleted successfully',
+        };
+}
 }

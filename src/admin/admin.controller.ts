@@ -1,8 +1,8 @@
-import { Controller, Get, SetMetadata, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, SetMetadata, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { UserRole } from '@prisma/client';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 const ROLES_KEY = 'roles';
 
@@ -40,5 +40,13 @@ export class AdminController {
    @Get('bug-reports')
    getBugReports() {
       return this.admin.getBugReports();
+   }
+
+   @ApiOperation({ summary: 'Удалить баг-репорт' })
+   @ApiParam({ name: 'id', example: 'bug_123' })
+   @ApiOkResponse({ description: 'Баг-репорт удалён' })
+   @Delete('bug-reports/:id')
+   deleteBugReport(@Param('id') id: string) {
+      return this.admin.deleteBugReport(id);
    }
 }
