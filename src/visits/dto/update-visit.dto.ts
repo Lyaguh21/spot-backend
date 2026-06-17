@@ -52,10 +52,17 @@ export class UpdateVisitDto {
     @IsBoolean()
     isFavorite?: boolean;
 
-    @ApiPropertyOptional({ example: '', default: '' })
+    @ApiPropertyOptional({
+        type: [String],
+        example: [
+            "https://storage.../1.jpg",
+            "https://storage.../2.jpg"
+        ]
+    })
     @IsOptional()
-    @IsString()
-    photoURL?: string;
+    @IsArray()
+    @IsString({ each: true })
+    photos?: string[];
 
     @ApiPropertyOptional({ example: '', default: '' })
     @IsOptional()

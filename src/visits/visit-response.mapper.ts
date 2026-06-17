@@ -8,7 +8,7 @@ type VisitWithPlace = {
     description?: string | null;
     ratings: unknown;
     isFavorite: boolean;
-    photoURL: string;
+    photos: string[];
     icon: string;
     color: string;
     visitDate: Date;
@@ -62,7 +62,7 @@ function toVisitOnlyResponse(visit: VisitWithPlace) {
         description: visit.description ?? '',
         ratings: formatRatings(visit.ratings),
         isFavorite: visit.isFavorite,
-        photoURL: visit.photoURL,
+        photos: visit.photos,
         icon: visit.icon,
         color: visit.color,
         visitDate: visit.visitDate.toISOString(),

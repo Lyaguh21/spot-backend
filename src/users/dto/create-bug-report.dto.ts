@@ -1,5 +1,5 @@
-import { IsOptional, IsString } from "class-validator";
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsArray, IsOptional, IsString } from "class-validator";
 
 export class CreateBugReportDto {
     @ApiProperty({ example: "Ошибка при поиске" })
@@ -14,8 +14,12 @@ export class CreateBugReportDto {
     @IsString()
     type!: string;
 
-    @ApiProperty({ example: "https://example.com/screenshot.png", required: false })
+    @ApiPropertyOptional({
+        type: [String],
+        example: ["https://example.com/screenshot-1.png", "https://example.com/screenshot-2.png"],
+    })
     @IsOptional()
-    @IsString()
-    photoUrl?: string;
+    @IsArray()
+    @IsString({ each: true })
+    photos?: string[];
 }

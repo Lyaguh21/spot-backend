@@ -163,7 +163,7 @@ model Visit {
 
   isFavorite Boolean @default(false)
 
-  photoURL String @default("")
+  photos String[] @default([])
 
   icon String @default("")
 
@@ -191,7 +191,7 @@ model BugReport {
 
   type String
 
-  photoUrl String?
+  photos String[] @default([])
 
   createdAt DateTime @default(now())
 }
