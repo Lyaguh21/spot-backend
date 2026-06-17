@@ -8,16 +8,19 @@ export const CurrentUser = createParamDecorator(
     ctx: ExecutionContext,
   ): AuthUser | AuthUserWithRefresh | string | undefined => {
     const req = ctx.switchToHttp().getRequest<Request>();
-    const user = req.user as unknown as AuthUser | AuthUserWithRefresh;
+    const user = req.user as unknown as
+      | AuthUser
+      | AuthUserWithRefresh
+      | undefined;
 
     if (!data) {
       return user;
     }
 
     if (data === 'sub') {
-      return user.id;
+      return user?.id;
     }
 
-    return user[data];
+    return user?.[data];
   },
 );

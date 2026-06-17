@@ -26,6 +26,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { AuthUser } from 'src/auth/types/auth-user.type';
 import { UpdateCoupleDto } from './dto/update-couple.dto';
 import { Public } from 'src/auth/decorators/public.decorator';
+import { OptionalJwtAccessGuard } from 'src/auth/guards/optional-jwt-access.guard';
 
 @ApiTags('couples')
 @ApiBearerAuth('accessToken')
@@ -84,9 +85,10 @@ export class CouplesController {
     @ApiParam({ name: 'id', example: 'couple_123' })
     @ApiOkResponse({ description: 'Данные пары' })
     @Get(':id')
+    @UseGuards(OptionalJwtAccessGuard)
     findOne(
         @Param('id') id: string,
-        @CurrentUser('id') userId: string,
+        @CurrentUser('id') userId?: string,
     ) {
         return this.couples.findOne(id, userId);
     }
