@@ -14,6 +14,23 @@ type VisitWithPlace = {
     color: string;
     status: VisitStatus;
     visitDate: Date;
+    user?: {
+        id: string;
+        username: string;
+        name: string;
+        avatarUrl?: string | null;
+    } | null;
+    couple?: {
+        id: string;
+        members: {
+            user: {
+                id: string;
+                username: string;
+                name: string;
+                avatarUrl?: string | null;
+            };
+        }[];
+    } | null;
     place: {
         id?: string;
         externalId?: string | null;
@@ -60,6 +77,29 @@ function toVisitOnlyResponse(visit: VisitWithPlace) {
         ownerType: visit.ownerType,
         ...(visit.ownerType === OwnerType.COUPLE && visit.coupleId
             ? { coupleId: visit.coupleId }
+            : {}),
+        ...(visit.user
+            ? {
+                user: {
+                    id: visit.user.id,
+                    username: visit.user.username,
+                    name: visit.user.name,
+                    avatarUrl: visit.user.avatarUrl,
+                },
+            }
+            : {}),
+        ...(visit.couple
+            ? {
+                couple: {
+                    id: visit.couple.id,
+                    members: visit.couple.members.map((member) => ({
+                        id: member.user.id,
+                        username: member.user.username,
+                        name: member.user.name,
+                        avatarUrl: member.user.avatarUrl,
+                    })),
+                },
+            }
             : {}),
         title: visit.title,
         description: visit.description ?? '',
