@@ -740,7 +740,7 @@ export class UsersService {
         title: dto.title,
         description: dto.description,
         type: dto.type,
-          photos: dto.photos ?? [],
+        photos: dto.photos ?? [],
       },
     });
   }

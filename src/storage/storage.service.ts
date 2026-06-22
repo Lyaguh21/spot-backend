@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand, S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export interface UploadedStorageFile {
   readonly originalname: string;
@@ -51,5 +52,40 @@ export class StorageService {
     );
 
     return urls.length === 1 ? urls[0] : urls;
+  }
+
+  private getKeyFromUrl(url: string): string {
+    const bucket = process.env.S3_BUCKET!;
+
+    const marker = `/${bucket}/`;
+
+    const index = url.indexOf(marker);
+
+    if (index === -1) {
+        throw new Error("Invalid storage url");
+    }
+
+    return url.substring(index + marker.length);
+  }
+
+  async generateSignedUrl(url: string) {
+    const key = this.getKeyFromUrl(url);
+
+    const command = new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: key,
+    });
+
+    const signedUrl = await getSignedUrl(this.s3, command, {
+        expiresIn: 60 * 60,
+    });
+
+    return signedUrl;
+  }
+
+  async generateSignedUrls(urls: string[]) {
+    return Promise.all(
+        urls.map((url) => this.generateSignedUrl(url)),
+    );
   }
 }
