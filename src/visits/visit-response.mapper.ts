@@ -1,6 +1,7 @@
-import { OwnerType } from '@prisma/client';
+import { OwnerType, VisitStatus } from '@prisma/client';
 
 type VisitWithPlace = {
+    id: string;
     placeId?: string;
     ownerType: OwnerType;
     coupleId?: string | null;
@@ -11,6 +12,7 @@ type VisitWithPlace = {
     photos: string[];
     icon: string;
     color: string;
+    status: VisitStatus;
     visitDate: Date;
     place: {
         id?: string;
@@ -54,6 +56,7 @@ function formatRatings(ratings: unknown) {
 
 function toVisitOnlyResponse(visit: VisitWithPlace) {
     return {
+        id: visit.id,
         ownerType: visit.ownerType,
         ...(visit.ownerType === OwnerType.COUPLE && visit.coupleId
             ? { coupleId: visit.coupleId }
@@ -65,6 +68,7 @@ function toVisitOnlyResponse(visit: VisitWithPlace) {
         photos: visit.photos,
         icon: visit.icon,
         color: visit.color,
+        status: visit.status,
         visitDate: visit.visitDate.toISOString(),
     };
 }

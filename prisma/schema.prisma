@@ -121,6 +121,11 @@ enum OwnerType {
   COUPLE
 }
 
+enum VisitStatus {
+  VISITED
+  PLANNED
+}
+
 model Place {
   id String @id @default(uuid())
 
@@ -168,6 +173,8 @@ model Visit {
   icon String @default("")
 
   color String @default("")
+
+  status VisitStatus @default(VISITED)
 
   visitDate DateTime
 

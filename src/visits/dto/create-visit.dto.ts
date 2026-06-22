@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { OwnerType } from '@prisma/client';
+import { OwnerType, VisitStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
     IsArray,
@@ -121,6 +121,16 @@ export class CreateVisitDto {
     @IsOptional()
     @IsString()
     color?: string;
+
+    @ApiPropertyOptional({
+        enum: VisitStatus,
+        default: VisitStatus.VISITED,
+        example: VisitStatus.VISITED,
+        description: 'VISITED for visited places, PLANNED for places in plans',
+    })
+    @IsOptional()
+    @IsEnum(VisitStatus)
+    status?: VisitStatus;
 
     @ApiProperty({ example: '2026-05-30T10:00:00.000Z', format: 'date-time' })
     @IsDateString()
