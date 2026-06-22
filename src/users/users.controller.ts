@@ -97,6 +97,13 @@ export class UsersController {
     return this.users.getUserPlaces(username, query);
   }
 
+  @ApiOperation({ summary: "Получить посещения моих подписок по местам" })
+  @ApiOkResponse({ description: "Посещения подписок, сгруппированные по местам" })
+  @Get("me/following/visits")
+  getMyFollowingVisits(@CurrentUser() user: AuthUser) {
+    return this.users.getMyFollowingVisits(String(user.id));
+  }
+
   @ApiOperation({ summary: "Подписаться на пользователя" })
   @ApiOkResponse({ description: "Успешная подписка на пользователя" })
   @Post(":username/follow")

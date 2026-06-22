@@ -1,8 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { VisitStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
     IsArray,
     IsBoolean,
+    IsEnum,
     IsNumber,
     IsOptional,
     IsPositive,
@@ -73,6 +75,15 @@ export class UpdateVisitDto {
     @IsOptional()
     @IsString()
     color?: string;
+
+    @ApiPropertyOptional({
+        enum: VisitStatus,
+        example: VisitStatus.PLANNED,
+        description: 'VISITED for visited places, PLANNED for places in plans',
+    })
+    @IsOptional()
+    @IsEnum(VisitStatus)
+    status?: VisitStatus;
 
     @ApiPropertyOptional({ example: '2026-05-30T10:00:00.000Z', format: 'date-time' })
     @IsOptional()

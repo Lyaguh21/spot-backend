@@ -131,9 +131,10 @@ export class VisitsService {
                 description: dto.description,
                 ratings: this.toRatingsJson(dto.ratings) ?? [],
                 isFavorite: dto.isFavorite ?? false,
-                photos: dto.photos ?? [],
+                photos: dto.photos,
                 icon: dto.icon,
                 color: dto.color,
+                status: dto.status,
 
                 visitDate: new Date(dto.visitDate),
             },
@@ -182,9 +183,7 @@ export class VisitsService {
             throw new NotFoundException('Visit not found');
         }
 
-        if (visit.userId !== userId) {
-            throw new ForbiddenException('Unauthorized');
-        }
+        await this.assertCanManageVisit(userId, visit);
 
         const updatedVisit = await this.prisma.visit.update({
             where: {
@@ -195,9 +194,10 @@ export class VisitsService {
                 description: dto.description,
                 ratings: this.toRatingsJson(dto.ratings),
                 isFavorite: dto.isFavorite,
-                photos: dto.photos ?? [],
+                photos: dto.photos,
                 icon: dto.icon,
                 color: dto.color,
+                status: dto.status,
                 visitDate: dto.visitDate ? new Date(dto.visitDate) : undefined,
             },
             include: {
@@ -219,14 +219,47 @@ export class VisitsService {
             throw new NotFoundException('Visit not found');
         }
 
-        if (visit.userId !== userId) {
-            throw new ForbiddenException('Unauthorized');
-        }
+        await this.assertCanManageVisit(userId, visit);
 
         await this.prisma.visit.delete({
             where: { id: visitId },
         });
 
         return { message: 'Visit deleted' };    
+    }
+
+    private async assertCanManageVisit(
+        userId: string,
+        visit: {
+            ownerType: OwnerType;
+            userId: string | null;
+            coupleId: string | null;
+        },
+    ) {
+        if (visit.ownerType === OwnerType.USER) {
+            if (visit.userId !== userId) {
+                throw new ForbiddenException('Unauthorized');
+            }
+
+            return;
+        }
+
+        if (!visit.coupleId) {
+            throw new ForbiddenException('Unauthorized');
+        }
+
+        const membership = await this.prisma.coupleMember.findFirst({
+            where: {
+                userId,
+                coupleId: visit.coupleId,
+            },
+            select: {
+                id: true,
+            },
+        });
+
+        if (!membership) {
+            throw new ForbiddenException('Unauthorized');
+        }
     }
 }

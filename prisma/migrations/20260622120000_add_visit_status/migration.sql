@@ -1,0 +1,4 @@
+CREATE TYPE "VisitStatus" AS ENUM ('VISITED', 'PLANNED');
+
+ALTER TABLE "Visit"
+ADD COLUMN "status" "VisitStatus" NOT NULL DEFAULT 'VISITED';

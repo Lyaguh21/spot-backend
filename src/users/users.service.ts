@@ -358,6 +358,85 @@ export class UsersService {
     return toPlacesWithVisitsResponse(visits);
   }
 
+  async getMyFollowingVisits(currentUserId: string) {
+    const [followedUsers, followedCouples] = await Promise.all([
+      this.prisma.userSubscription.findMany({
+        where: {
+          followerId: currentUserId,
+        },
+        select: {
+          targetUserId: true,
+        },
+      }),
+      this.prisma.coupleSubscription.findMany({
+        where: {
+          followerId: currentUserId,
+        },
+        select: {
+          targetCoupleId: true,
+        },
+      }),
+    ]);
+
+    const followedUserIds = followedUsers.map((user) => user.targetUserId);
+    const followedCoupleIds = followedCouples.map(
+      (couple) => couple.targetCoupleId,
+    );
+
+    if (followedUserIds.length === 0 && followedCoupleIds.length === 0) {
+      return toPlacesWithVisitsResponse([]);
+    }
+
+    const visits = await this.prisma.visit.findMany({
+      where: {
+        OR: [
+          {
+            userId: {
+              in: followedUserIds,
+            },
+          },
+          {
+            coupleId: {
+              in: followedCoupleIds,
+            },
+          },
+        ],
+      },
+      include: {
+        place: true,
+        user: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+        couple: {
+          include: {
+            members: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                    name: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        visitDate: "desc",
+      },
+    });
+
+    return toPlacesWithVisitsResponse(visits);
+  }
+
   async follow(
     currentUserId: string,
     target: {
