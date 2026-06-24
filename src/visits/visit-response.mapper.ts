@@ -12,7 +12,7 @@ type VisitWithPlace = {
     photos: string[];
     icon: string;
     color: string;
-    status: VisitStatus;
+    status?: VisitStatus;
     visitDate: Date;
     user?: {
         id: string;
@@ -108,7 +108,7 @@ function toVisitOnlyResponse(visit: VisitWithPlace) {
         photos: visit.photos,
         icon: visit.icon,
         color: visit.color,
-        status: visit.status,
+        status: visit.status ?? VisitStatus.VISITED,
         visitDate: visit.visitDate.toISOString(),
     };
 }

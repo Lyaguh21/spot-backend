@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -11,6 +12,7 @@ import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import type { StringValue } from 'ms';
 import { LoginDto } from './dto/login.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 type AuthStatusUser = {
   id: string;
@@ -85,8 +87,93 @@ export class AuthService {
       },
     });
 
-    const tokens = await this.issueTokens(user.id, user.email, user.tokenVersion);
-    await this.setRefreshTokenHash(user.id, tokens.refreshToken);
+    const code = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+
+    await this.prisma.emailVerificationCode.create({
+      data: {
+        userId: user.id,
+        code,
+        expiresAt: new Date(
+          Date.now() + 10 * 60 * 1000,
+        ),
+      },
+    });
+
+    console.log('code:', code);
+
+    return {
+      message: 'Verification code sent',
+    };
+  }
+
+  async verifyEmail(dto: VerifyEmailDto) {
+    const email = dto.email.toLowerCase().trim();
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        role: true,
+        tokenVersion: true,
+        isEmailVerified: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    const verificationCode = await this.prisma.emailVerificationCode.findFirst({
+      where: {
+        userId: user.id,
+        code: dto.code,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!verificationCode) {
+      throw new BadRequestException('Invalid code');
+    }
+
+    await this.prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        isEmailVerified: true,
+      },
+    });
+
+    await this.prisma.emailVerificationCode.deleteMany({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    const tokens = await this.issueTokens(
+      user.id,
+      user.email,
+      user.tokenVersion,
+    );
+
+    await this.setRefreshTokenHash(
+      user.id,
+      tokens.refreshToken,
+    );
 
     const safeUser = { 
       id: user.id, 
@@ -116,6 +203,7 @@ export class AuthService {
         role: true,
         passwordHash: true,
         tokenVersion: true,
+        isEmailVerified: true,
       },
     });
 
@@ -123,6 +211,10 @@ export class AuthService {
 
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new BadRequestException('Неверный пароль');
+
+    if (!user.isEmailVerified) {
+      throw new ForbiddenException('Почта не подтверждена');
+    }
 
     const safeUser = { 
       id: user.id, 

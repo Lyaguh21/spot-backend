@@ -21,6 +21,7 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { Public } from './decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { LoginDto } from './dto/login.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -55,24 +56,33 @@ export class AuthController {
   @Public()
   @Post('register')
   @ApiBody({ type: RegisterDto })
-  async register(
-    @Body() dto: RegisterDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async register(@Body() dto: RegisterDto) {
     const result = await this.auth.register(dto);
 
-    setAuthCookies({
-      res,
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-      secure: this.cookieSecure(),
-      sameSite: this.cookieSameSite(),
-      accessMaxAgeMs: this.accessMaxAgeMs(),
-      refreshMaxAgeMs: this.refreshMaxAgeMs(),
-    });
-
-    return { user: result.user };
+    return result 
   }
+
+@Public()
+@Post('verify-email')
+@ApiBody({ type: VerifyEmailDto })
+async verifyEmail(
+  @Body() dto: VerifyEmailDto,
+  @Res({ passthrough: true }) res: Response,
+) {
+  const result = await this.auth.verifyEmail(dto);
+
+  setAuthCookies({
+    res,
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+    secure: this.cookieSecure(),
+    sameSite: this.cookieSameSite(),
+    accessMaxAgeMs: this.accessMaxAgeMs(),
+    refreshMaxAgeMs: this.refreshMaxAgeMs(),
+  });
+
+  return { user: result.user };
+}
 
   @Post('login')
   @Public()

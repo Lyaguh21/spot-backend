@@ -18,6 +18,9 @@ model User {
 
   role UserRole @default(USER)
 
+  isEmailVerified        Boolean                 @default(false)
+  emailVerificationCodes EmailVerificationCode[]
+
   coupleMembers CoupleMember[]
 
   // подписки на пользователей
@@ -41,6 +44,21 @@ model User {
   isDeleted Boolean @default(false)
 
   bugReports BugReport[]
+}
+
+model EmailVerificationCode {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  code String
+
+  attempts Int @default(0)
+
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
 }
 
 enum UserRole {
