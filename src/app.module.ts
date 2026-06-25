@@ -12,6 +12,7 @@ import { CouplesModule } from "./couples/couples.module";
 import { FeedModule } from "./feed/feed.module";
 import { AdminModule } from './admin/admin.module';
 import { StorageModule } from './storage/storage.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { StorageModule } from './storage/storage.module';
     FeedModule,
     AdminModule,
     StorageModule,
+    EmailModule,
   ],
   providers: [
     {

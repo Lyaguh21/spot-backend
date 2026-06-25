@@ -13,6 +13,7 @@ import * as bcrypt from 'bcrypt';
 import type { StringValue } from 'ms';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { EmailService } from 'src/email/email.service';
 
 type AuthStatusUser = {
   id: string;
@@ -36,6 +37,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly email: EmailService,
   ) {}
 
   private getAccessSecret() {
@@ -53,6 +55,16 @@ export class AuthService {
   private getRefreshExpires() {
     return (this.config.get('JWT_REFRESH_EXPIRES') ?? '7d') as StringValue;
   }
+
+  async testEmail(email: string) {
+    await this.email.sendVerificationCode(email, '123456');
+
+    console.log('finish');
+
+    return {
+      message: 'Email sent',
+    };
+}
 
   async register(dto: RegisterDto) {
     const email = dto.email.toLowerCase().trim();
@@ -87,9 +99,7 @@ export class AuthService {
       },
     });
 
-    const code = Math.floor(
-      100000 + Math.random() * 900000,
-    ).toString();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
 
     await this.prisma.emailVerificationCode.create({
       data: {

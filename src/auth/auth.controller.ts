@@ -54,6 +54,16 @@ export class AuthController {
   }
 
   @Public()
+  @Post('test-email')
+  @ApiBody({ type: VerifyEmailDto })
+  testEmail(
+      @Body('email') email: string,
+  ) {
+    
+      return this.auth.testEmail(email);
+  }
+
+  @Public()
   @Post('register')
   @ApiBody({ type: RegisterDto })
   async register(@Body() dto: RegisterDto) {
@@ -62,27 +72,27 @@ export class AuthController {
     return result 
   }
 
-@Public()
-@Post('verify-email')
-@ApiBody({ type: VerifyEmailDto })
-async verifyEmail(
-  @Body() dto: VerifyEmailDto,
-  @Res({ passthrough: true }) res: Response,
-) {
-  const result = await this.auth.verifyEmail(dto);
+  @Public()
+  @Post('verify-email')
+  @ApiBody({ type: VerifyEmailDto })
+  async verifyEmail(
+    @Body() dto: VerifyEmailDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.auth.verifyEmail(dto);
 
-  setAuthCookies({
-    res,
-    accessToken: result.accessToken,
-    refreshToken: result.refreshToken,
-    secure: this.cookieSecure(),
-    sameSite: this.cookieSameSite(),
-    accessMaxAgeMs: this.accessMaxAgeMs(),
-    refreshMaxAgeMs: this.refreshMaxAgeMs(),
-  });
+    setAuthCookies({
+      res,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      secure: this.cookieSecure(),
+      sameSite: this.cookieSameSite(),
+      accessMaxAgeMs: this.accessMaxAgeMs(),
+      refreshMaxAgeMs: this.refreshMaxAgeMs(),
+    });
 
-  return { user: result.user };
-}
+    return { user: result.user };
+  }
 
   @Post('login')
   @Public()

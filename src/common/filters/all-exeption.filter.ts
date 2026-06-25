@@ -53,7 +53,11 @@ export class AllExceptionFilter implements ExceptionFilter {
 
     // 2) Prisma errors (по коду)
     const prismaCode = (exception as any)?.code;
-    if (prismaCode) {
+
+    if (
+        typeof prismaCode === 'string' &&
+        prismaCode.startsWith('P')
+    ) {
       const mapped = this.mapPrismaError(exception as any);
 
       // Prisma ошибки часто 4xx, но всё равно полезно логировать
