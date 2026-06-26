@@ -8,8 +8,11 @@ COPY package*.json ./
 RUN npm ci
 
 COPY prisma ./prisma
-COPY nest-cli.json tsconfig*.json ./
+COPY nest-cli.json prisma.config.ts tsconfig*.json ./
 COPY src ./src
+
+ARG DATABASE_URL="postgresql://prisma:prisma@localhost:5432/prisma?schema=public"
+ENV DATABASE_URL=$DATABASE_URL
 
 RUN npx prisma generate
 RUN npm run build
