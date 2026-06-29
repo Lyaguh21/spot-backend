@@ -54,16 +54,6 @@ export class AuthController {
   }
 
   @Public()
-  @Post('test-email')
-  @ApiBody({ type: VerifyEmailDto })
-  testEmail(
-      @Body('email') email: string,
-  ) {
-    
-      return this.auth.testEmail(email);
-  }
-
-  @Public()
   @Post('register')
   @ApiBody({ type: RegisterDto })
   async register(@Body() dto: RegisterDto) {

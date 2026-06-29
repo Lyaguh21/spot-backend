@@ -56,16 +56,6 @@ export class AuthService {
     return (this.config.get('JWT_REFRESH_EXPIRES') ?? '7d') as StringValue;
   }
 
-  async testEmail(email: string) {
-    await this.email.sendVerificationCode(email, '123456');
-
-    console.log('finish');
-
-    return {
-      message: 'Email sent',
-    };
-}
-
   async register(dto: RegisterDto) {
     const email = dto.email.toLowerCase().trim();
     const username = dto.username.trim();
@@ -103,18 +93,16 @@ export class AuthService {
 
     await this.prisma.emailVerificationCode.create({
       data: {
-        userId: user.id,
-        code,
-        expiresAt: new Date(
-          Date.now() + 10 * 60 * 1000,
-        ),
+          userId: user.id,
+          code,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       },
     });
 
-    console.log('code:', code);
+    await this.email.sendVerificationCode(user.email, code);
 
     return {
-      message: 'Verification code sent',
+        message: 'Verification code sent',
     };
   }
 
