@@ -21,6 +21,7 @@ type AuthStatusUser = {
   username: string;
   name: string;
   role: string;
+  isEmailVerified: boolean;
   coupleId: string | null;
   partner: {
     id: string;
@@ -85,6 +86,7 @@ export class AuthService {
         username: true,
         name: true,
         role: true,
+        isEmailVerified: true,
         tokenVersion: true,
       },
     });
@@ -101,8 +103,29 @@ export class AuthService {
 
     await this.email.sendVerificationCode(user.email, code);
 
+    const tokens = await this.issueTokens(
+      user.id,
+      user.email,
+      user.tokenVersion,
+    );
+
+    await this.setRefreshTokenHash(
+      user.id,
+      tokens.refreshToken,
+    );
+
+    const safeUser = { 
+      id: user.id, 
+      email: user.email,
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      isEmailVerified: user.isEmailVerified
+    };
+
     return {
-        message: 'Verification code sent',
+      user: safeUser,
+      ...tokens,
     };
   }
 
@@ -162,28 +185,8 @@ export class AuthService {
       },
     });
 
-    const tokens = await this.issueTokens(
-      user.id,
-      user.email,
-      user.tokenVersion,
-    );
-
-    await this.setRefreshTokenHash(
-      user.id,
-      tokens.refreshToken,
-    );
-
-    const safeUser = { 
-      id: user.id, 
-      email: user.email,
-      username: user.username,
-      name: user.name,
-      role: user.role
-    };
-
     return {
-      user: safeUser,
-      ...tokens,
+      message: 'Email verified successfully',
     };
   }
 
@@ -199,9 +202,9 @@ export class AuthService {
         username: true,
         name: true,
         role: true,
+        isEmailVerified: true,
         passwordHash: true,
         tokenVersion: true,
-        isEmailVerified: true,
       },
     });
 
@@ -210,16 +213,13 @@ export class AuthService {
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new BadRequestException('Неверный пароль');
 
-    if (!user.isEmailVerified) {
-      throw new ForbiddenException('Почта не подтверждена');
-    }
-
     const safeUser = { 
       id: user.id, 
       email: user.email,
       username: user.username,
       name: user.name,
-      role: user.role
+      role: user.role,
+      isEmailVerified: user.isEmailVerified
     };
 
     const tokens = await this.issueTokens(user.id, user.email, user.tokenVersion);
@@ -246,6 +246,7 @@ export class AuthService {
         username: true,
         name: true,
         role: true,
+        isEmailVerified: true,
         coupleMembers: {
           select: {
             coupleId: true,
@@ -260,6 +261,7 @@ export class AuthService {
                         name: true,
                         avatarUrl: true,
                         role: true,
+                        isEmailVerified: true,
                       },
                     },
                   },
@@ -287,6 +289,7 @@ export class AuthService {
       username: user.username,
       name: user.name,
       role: user.role,
+      isEmailVerified: user.isEmailVerified,
       coupleId: user.coupleMembers[0]?.coupleId ?? null,
       partner
     };

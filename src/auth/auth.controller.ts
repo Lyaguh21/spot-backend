@@ -56,20 +56,11 @@ export class AuthController {
   @Public()
   @Post('register')
   @ApiBody({ type: RegisterDto })
-  async register(@Body() dto: RegisterDto) {
-    const result = await this.auth.register(dto);
-
-    return result 
-  }
-
-  @Public()
-  @Post('verify-email')
-  @ApiBody({ type: VerifyEmailDto })
-  async verifyEmail(
-    @Body() dto: VerifyEmailDto,
+  async register(
+    @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.auth.verifyEmail(dto);
+    const result = await this.auth.register(dto);
 
     setAuthCookies({
       res,
@@ -82,6 +73,16 @@ export class AuthController {
     });
 
     return { user: result.user };
+  }
+
+  @Public()
+  @Post('verify-email')
+  @ApiBody({ type: VerifyEmailDto })
+  async verifyEmail(
+    @Body() dto: VerifyEmailDto,
+    
+  ) {
+    return this.auth.verifyEmail(dto);
   }
 
   @Post('login')
