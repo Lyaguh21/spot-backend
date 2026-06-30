@@ -150,6 +150,8 @@ export class UsersService {
     }
 
     const signedUser = await signAvatar(this.storage, user);
+    const profile = { ...signedUser };
+    delete (profile as { coupleMembers?: unknown }).coupleMembers;
 
     const couple = user.coupleMembers[0]?.couple;
 
@@ -164,7 +166,7 @@ export class UsersService {
     const stats = await this.getUserStats(user.id);
 
     return {
-      signedUser,
+      ...profile,
       coupleId: couple?.id ?? null,
       partner: signedPartner
         ? {
@@ -244,6 +246,8 @@ export class UsersService {
     }
 
     const signedUser = await signAvatar(this.storage, user);
+    const profile = { ...signedUser };
+    delete (profile as { coupleMembers?: unknown }).coupleMembers;
 
     const couple = user.coupleMembers[0]?.couple;
 
@@ -258,7 +262,7 @@ export class UsersService {
     const stats = await this.getUserStats(user.id);
 
     return {
-      signedUser,
+      ...profile,
       coupleId: couple?.id ?? null,
 
       partner: signedPartner
