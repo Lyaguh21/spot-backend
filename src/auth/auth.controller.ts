@@ -24,6 +24,7 @@ import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { EmailService } from 'src/email/email.service';
 import { ResendEmailCodeDto } from './dto/resend-verification-code.dto';
+import { resolveAuthCookiePolicy } from './auth.cookie-policy';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -38,25 +39,12 @@ export class AuthController {
     return (this.config.get<string>('COOKIE_SECURE') ?? 'false') === 'true';
   }
 
-  private isCapacitorOrigin(origin?: string) {
-    return (
-      origin === 'capacitor://localhost' ||
-      origin === 'https://localhost' ||
-      origin === 'http://localhost'
-    );
-  }
-
-  private cookieSameSite(origin?: string): 'lax' | 'strict' | 'none' {
-    if (this.cookieSecure() && this.isCapacitorOrigin(origin)) {
-      return 'none';
-    }
-
-    const defaultSameSite = this.cookieSecure() ? 'none' : 'lax';
-    const v = (
-      this.config.get<string>('COOKIE_SAMESITE') ?? defaultSameSite
-    ).toLowerCase();
-    if (v === 'none' || v === 'strict' || v === 'lax') return v;
-    return 'lax';
+  private cookiePolicy(origin?: string) {
+    return resolveAuthCookiePolicy({
+      secure: this.cookieSecure(),
+      sameSite: this.config.get<string>('COOKIE_SAMESITE'),
+      origin,
+    });
   }
 
   private accessMaxAgeMs() {
@@ -78,13 +66,14 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.auth.register(dto);
+    const cookiePolicy = this.cookiePolicy(req.headers.origin);
 
     setAuthCookies({
       res,
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
-      secure: this.cookieSecure(),
-      sameSite: this.cookieSameSite(req.headers.origin),
+      secure: cookiePolicy.secure,
+      sameSite: cookiePolicy.sameSite,
       accessMaxAgeMs: this.accessMaxAgeMs(),
       refreshMaxAgeMs: this.refreshMaxAgeMs(),
     });
@@ -118,13 +107,14 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.auth.login(dto);
+    const cookiePolicy = this.cookiePolicy(req.headers.origin);
 
     setAuthCookies({
       res,
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
-      secure: this.cookieSecure(),
-      sameSite: this.cookieSameSite(req.headers.origin),
+      secure: cookiePolicy.secure,
+      sameSite: cookiePolicy.sameSite,
       accessMaxAgeMs: this.accessMaxAgeMs(),
       refreshMaxAgeMs: this.refreshMaxAgeMs(),
     });
@@ -145,13 +135,14 @@ export class AuthController {
       user.id,
       user.refreshToken,
     );
+    const cookiePolicy = this.cookiePolicy(req.headers.origin);
 
     setAuthCookies({
       res,
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
-      secure: this.cookieSecure(),
-      sameSite: this.cookieSameSite(req.headers.origin),
+      secure: cookiePolicy.secure,
+      sameSite: cookiePolicy.sameSite,
       accessMaxAgeMs: this.accessMaxAgeMs(),
       refreshMaxAgeMs: this.refreshMaxAgeMs(),
     });
@@ -167,10 +158,11 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.auth.logout(user.id);
+    const cookiePolicy = this.cookiePolicy(req.headers.origin);
 
     clearAuthCookies(res, {
-      secure: this.cookieSecure(),
-      sameSite: this.cookieSameSite(req.headers.origin),
+      secure: cookiePolicy.secure,
+      sameSite: cookiePolicy.sameSite,
     });
 
     return { ok: true };
