@@ -14,6 +14,7 @@ import type { StringValue } from 'ms';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { EmailService } from 'src/email/email.service';
+import { ResendEmailCodeDto } from './dto/resend-verification-code.dto';
 
 type AuthStatusUser = {
   id: string;
@@ -188,6 +189,61 @@ export class AuthService {
     return {
       message: 'Email verified successfully',
     };
+  }
+
+  async resendVerificationCode(dto: ResendEmailCodeDto) {
+    const email = dto.email.toLowerCase().trim();
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        isEmailVerified: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    const lastCode = await this.prisma.emailVerificationCode.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (lastCode) {
+      const now = Date.now();
+      const diff = now - new Date(lastCode.createdAt).getTime();
+
+      if (diff < 60 * 1000) {
+        throw new BadRequestException(
+          'Wait 60 seconds before requesting a new code',
+        );
+      }
+    }
+
+    await this.prisma.emailVerificationCode.deleteMany({
+      where: { userId: user.id }
+    })
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await this.prisma.emailVerificationCode.create({
+      data: {
+        userId: user.id,
+        code,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+      }
+    })
+
+    await this.email.sendVerificationCode(user.email, code);
+
+    return {message: 'Code resend'};
   }
 
   async login(dto: LoginDto) {

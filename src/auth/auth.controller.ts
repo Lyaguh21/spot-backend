@@ -22,6 +22,8 @@ import { Public } from './decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { EmailService } from 'src/email/email.service';
+import { ResendEmailCodeDto } from './dto/resend-verification-code.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -29,6 +31,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly config: ConfigService,
+    private readonly email: EmailService,
   ) {}
 
   private cookieSecure() {
@@ -83,6 +86,13 @@ export class AuthController {
     
   ) {
     return this.auth.verifyEmail(dto);
+  }
+
+  @Public()
+  @Post('resend-email-code')
+  @ApiBody({ type: ResendEmailCodeDto })
+  async resendEmailCode(@Body() dto: ResendEmailCodeDto) {
+    return this.auth.resendVerificationCode(dto);
   }
 
   @Post('login')
