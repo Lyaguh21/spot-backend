@@ -7,6 +7,23 @@ import { AllExceptionFilter } from "./common/filters/all-exeption.filter";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
 
+const DEFAULT_ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "capacitor://localhost",
+  "http://localhost",
+  "https://localhost",
+];
+
+function getAllowedOrigins() {
+  return [
+    ...DEFAULT_ALLOWED_ORIGINS,
+    ...(process.env.CORS_ORIGINS ?? "")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  ];
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalInterceptors(new LoggingInterceptor());
@@ -39,7 +56,7 @@ async function bootstrap() {
         return;
       }
 
-      if (origin === "http://localhost:5173") {
+      if (getAllowedOrigins().includes(origin)) {
         callback(null, true);
         return;
       }
