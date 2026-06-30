@@ -4,10 +4,15 @@ import { randomBytes } from 'crypto';
 import { JoinCoupleDto } from './dto/join-couple.dto';
 import { UpdateCoupleDto } from './dto/update-couple.dto';
 import { toPlacesWithVisitsResponse } from 'src/visits/visit-response.mapper';
+import { signPhotos } from 'src/storage/storage-sign.helper';
+import { StorageService } from 'src/storage/storage.service';
 
 @Injectable()
 export class CouplesService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly storage: StorageService,
+    ) {}
 
     generateUniqueInviteCode(length: number = 5): string {
         return randomBytes(length)
@@ -331,7 +336,17 @@ export class CouplesService {
             },
         });
 
-        return toPlacesWithVisitsResponse(visits);
+        const response = toPlacesWithVisitsResponse(visits);
+
+        for (const place of response.map) {
+            place.visits = await Promise.all(
+                place.visits.map((visit) =>
+                    signPhotos(this.storage, visit),
+                ),
+            );
+        }
+
+        return response;
     }
 
     async getCouplePlaces(coupleId: string) {

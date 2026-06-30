@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetFeedDto } from './dto/get-feed.dto';
 import { StorageService } from 'src/storage/storage.service';
-import { VisitsService } from 'src/visits/visits.service';
+import { signVisitResponse } from 'src/storage/storage-sign.helper';
 
 @Injectable()
 export class FeedService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly visit: VisitsService,
+        private readonly storage: StorageService,
     ) {}
 
     async getFeed(userId: string, dto: GetFeedDto) {
@@ -77,6 +77,6 @@ export class FeedService {
             take: dto.limit,
         })
 
-        return this.visit.signVisitsPhotos(visits);
+        return Promise.all(visits.map((visit) => signVisitResponse(this.storage, visit)));
     }
 }
