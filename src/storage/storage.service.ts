@@ -54,18 +54,65 @@ export class StorageService {
     return urls.length === 1 ? urls[0] : urls;
   }
 
+  normalizeStorageUrl(url: string): string {
+    const unwrappedUrl = this.unwrapSerializedStorageUrl(url).trim();
+
+    if (!unwrappedUrl) {
+      return unwrappedUrl;
+    }
+
+    try {
+      const parsedUrl = new URL(unwrappedUrl);
+      parsedUrl.search = "";
+      parsedUrl.hash = "";
+
+      return parsedUrl.toString();
+    } catch {
+      return unwrappedUrl.split("#")[0].split("?")[0];
+    }
+  }
+
+  private unwrapSerializedStorageUrl(url: string): string {
+    const trimmedUrl = url.trim();
+
+    if (!trimmedUrl.startsWith("{") && !trimmedUrl.startsWith("[")) {
+      return url;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmedUrl) as unknown;
+
+      if (typeof parsed === "string") {
+        return this.unwrapSerializedStorageUrl(parsed);
+      }
+
+      if (parsed && typeof parsed === "object" && "data" in parsed) {
+        const data = (parsed as { data?: unknown }).data;
+
+        if (typeof data === "string") {
+          return this.unwrapSerializedStorageUrl(data);
+        }
+      }
+    } catch {
+      return url;
+    }
+
+    return url;
+  }
+
   private getKeyFromUrl(url: string): string {
+    const normalizedUrl = this.normalizeStorageUrl(url);
     const bucket = process.env.S3_BUCKET!;
 
     const marker = `/${bucket}/`;
 
-    const index = url.indexOf(marker);
+    const index = normalizedUrl.indexOf(marker);
 
     if (index === -1) {
         throw new Error("Invalid storage url");
     }
 
-    return url.substring(index + marker.length);
+    return normalizedUrl.substring(index + marker.length);
   }
 
   private async generateSignedUrl(url: string) {

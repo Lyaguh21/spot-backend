@@ -27,6 +27,13 @@ export function setAuthCookies(params: {
     refreshMaxAgeMs,
   } = params;
 
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure,
+    sameSite,
+    path: '/auth',
+  });
+
   res.cookie('accessToken', accessToken, {
     httpOnly: true,
     secure,
@@ -39,8 +46,7 @@ export function setAuthCookies(params: {
     httpOnly: true,
     secure,
     sameSite,
-    // Часто refresh ограничивают только auth-роутами:
-    path: '/auth',
+    path: '/',
     maxAge: refreshMaxAgeMs,
   });
 }
@@ -52,6 +58,12 @@ export function clearAuthCookies(
   const { secure, sameSite } = params;
 
   res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure,
+    sameSite,
+    path: '/',
+  });
+  res.clearCookie('refreshToken', {
     httpOnly: true,
     secure,
     sameSite,
