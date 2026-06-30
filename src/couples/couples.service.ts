@@ -4,8 +4,9 @@ import { randomBytes } from 'crypto';
 import { JoinCoupleDto } from './dto/join-couple.dto';
 import { UpdateCoupleDto } from './dto/update-couple.dto';
 import { toPlacesWithVisitsResponse } from 'src/visits/visit-response.mapper';
-import { signPhotos } from 'src/storage/storage-sign.helper';
+import { signAvatar, signPhotos } from 'src/storage/storage-sign.helper';
 import { StorageService } from 'src/storage/storage.service';
+import { PaginationDto } from 'src/users/dto/pagination.dto';
 
 @Injectable()
 export class CouplesService {
@@ -270,6 +271,12 @@ export class CouplesService {
         return {
             status: 'SUCCESS',
             ...couple,
+            members: await Promise.all(
+                couple.members.map(async (member) => ({
+                    ...member,
+                    user: await signAvatar(this.storage, member.user),
+                })),
+            ),
             generatedName,
         };
     }
@@ -317,6 +324,12 @@ export class CouplesService {
 
         return {
             ...couple,
+            members: await Promise.all(
+                couple.members.map(async (member) => ({
+                    ...member,
+                    user: await signAvatar(this.storage, member.user),
+                })),
+            ),
             generatedName,
             ...stats,
             isFollowing,
@@ -372,10 +385,20 @@ export class CouplesService {
             },
         });
     
-        return toPlacesWithVisitsResponse(visits);
+        const response = toPlacesWithVisitsResponse(visits);
+
+        for (const place of response.map) {
+            place.visits = await Promise.all(
+                place.visits.map((visit) =>
+                    signPhotos(this.storage, visit),
+                ),
+            );
+        }
+
+        return response;
     }
 
-    async getFollowers(coupleId: string) {
+    async getFollowers(coupleId: string, query: PaginationDto) {
         const couple = await this.prisma.couple.findUnique({
             where: { id: coupleId },
         });
@@ -384,7 +407,30 @@ export class CouplesService {
             throw new NotFoundException('Couple not found');
         }
 
-        return this.prisma.coupleSubscription.findMany({
+        const where = {
+            targetCoupleId: coupleId,
+
+            ...(query.search && {
+                follower: {
+                    OR: [
+                        {
+                            username: {
+                                contains: query.search,
+                                mode: 'insensitive' as const,
+                            },
+                        },
+                        {
+                            name: {
+                                contains: query.search,
+                                mode: 'insensitive' as const,
+                            },
+                        },
+                    ],
+                },
+            }),
+        };
+
+        const followers = await this.prisma.coupleSubscription.findMany({
             where: {
                 targetCoupleId: coupleId,
             },
@@ -398,6 +444,23 @@ export class CouplesService {
                     },
                 },
             },
+            skip: (query.page - 1) * query.limit,
+            take: query.limit,
         });
+
+        const total = await this.prisma.coupleSubscription.count({
+            where,
+        });
+
+        return {
+            items: await Promise.all(
+                followers.map((item) =>
+                    signAvatar(this.storage, item.follower),
+                ),
+            ),
+            total,
+            page: query.page,
+            limit: query.limit,
+        };
     }
 }

@@ -6,6 +6,7 @@ import {
     Param,
     Patch,
     Post,
+    Query,
     UseGuards,
 } from '@nestjs/common';
 
@@ -27,6 +28,7 @@ import type { AuthUser } from 'src/auth/types/auth-user.type';
 import { UpdateCoupleDto } from './dto/update-couple.dto';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { OptionalJwtAccessGuard } from 'src/auth/guards/optional-jwt-access.guard';
+import { PaginationDto } from 'src/users/dto/pagination.dto';
 
 @ApiTags('couples')
 @ApiBearerAuth('accessToken')
@@ -150,7 +152,8 @@ export class CouplesController {
     @Get(':id/followers')
     getFollowers(
         @Param('id') id: string,
+        @Query() query: PaginationDto,
     ) {
-        return this.couples.getFollowers(id);
+        return this.couples.getFollowers(id, query);
     }
 }
