@@ -50,11 +50,11 @@ export class StorageController {
   })
   @Post("upload")
   @UseInterceptors(FilesInterceptor("file"))
-  uploadFile(@UploadedFiles() files: UploadedStorageFile[]) {
+  async uploadFile(@UploadedFiles() files: UploadedStorageFile[]) {
     if (!files?.length) {
       throw new BadRequestException("File is required");
     }
 
-    return this.storageService.uploadFiles(files);
+    return await this.storageService.uploadFiles(files);
   }
 }
