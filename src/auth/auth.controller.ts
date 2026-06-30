@@ -38,9 +38,22 @@ export class AuthController {
     return (this.config.get<string>('COOKIE_SECURE') ?? 'false') === 'true';
   }
 
-  private cookieSameSite(): 'lax' | 'strict' | 'none' {
+  private isCapacitorOrigin(origin?: string) {
+    return (
+      origin === 'capacitor://localhost' ||
+      origin === 'https://localhost' ||
+      origin === 'http://localhost'
+    );
+  }
+
+  private cookieSameSite(origin?: string): 'lax' | 'strict' | 'none' {
+    if (this.cookieSecure() && this.isCapacitorOrigin(origin)) {
+      return 'none';
+    }
+
+    const defaultSameSite = this.cookieSecure() ? 'none' : 'lax';
     const v = (
-      this.config.get<string>('COOKIE_SAMESITE') ?? 'lax'
+      this.config.get<string>('COOKIE_SAMESITE') ?? defaultSameSite
     ).toLowerCase();
     if (v === 'none' || v === 'strict' || v === 'lax') return v;
     return 'lax';
@@ -61,6 +74,7 @@ export class AuthController {
   @ApiBody({ type: RegisterDto })
   async register(
     @Body() dto: RegisterDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.auth.register(dto);
@@ -70,7 +84,7 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
       secure: this.cookieSecure(),
-      sameSite: this.cookieSameSite(),
+      sameSite: this.cookieSameSite(req.headers.origin),
       accessMaxAgeMs: this.accessMaxAgeMs(),
       refreshMaxAgeMs: this.refreshMaxAgeMs(),
     });
@@ -100,6 +114,7 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   async login(
     @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.auth.login(dto);
@@ -109,7 +124,7 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
       secure: this.cookieSecure(),
-      sameSite: this.cookieSameSite(),
+      sameSite: this.cookieSameSite(req.headers.origin),
       accessMaxAgeMs: this.accessMaxAgeMs(),
       refreshMaxAgeMs: this.refreshMaxAgeMs(),
     });
@@ -123,6 +138,7 @@ export class AuthController {
   @Post('refresh')
   async refresh(
     @CurrentUser() user: AuthUserWithRefresh,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.auth.refreshTokens(
@@ -135,7 +151,7 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
       secure: this.cookieSecure(),
-      sameSite: this.cookieSameSite(),
+      sameSite: this.cookieSameSite(req.headers.origin),
       accessMaxAgeMs: this.accessMaxAgeMs(),
       refreshMaxAgeMs: this.refreshMaxAgeMs(),
     });
@@ -147,13 +163,14 @@ export class AuthController {
   @Post('logout')
   async logout(
     @CurrentUser() user: AuthUser,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.auth.logout(user.id);
 
     clearAuthCookies(res, {
       secure: this.cookieSecure(),
-      sameSite: this.cookieSameSite(),
+      sameSite: this.cookieSameSite(req.headers.origin),
     });
 
     return { ok: true };
