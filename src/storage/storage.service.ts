@@ -68,7 +68,7 @@ export class StorageService {
     return url.substring(index + marker.length);
   }
 
-  async generateSignedUrl(url: string) {
+  private async generateSignedUrl(url: string) {
     const key = this.getKeyFromUrl(url);
 
     const command = new GetObjectCommand({
@@ -83,9 +83,15 @@ export class StorageService {
     return signedUrl;
   }
 
-  async generateSignedUrls(urls: string[]) {
-    return Promise.all(
-        urls.map((url) => this.generateSignedUrl(url)),
-    );
+  async signUrl(url?: string | null): Promise<string | null> {
+    if (!url) {
+      return null;
+    }
+
+    return this.generateSignedUrl(url);
+  }
+
+  async signUrls(urls: string[]): Promise<string[]> {
+    return Promise.all(urls.map((url) => this.generateSignedUrl(url)));
   }
 }

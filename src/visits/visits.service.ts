@@ -5,6 +5,7 @@ import { Place, OwnerType, Prisma } from '@prisma/client';
 import { UpdateVisitDto } from './dto/update-visit.dto';
 import { toVisitResponse } from './visit-response.mapper';
 import { StorageService } from 'src/storage/storage.service';
+import { signPhotos, signVisitResponse } from 'src/storage/storage-sign.helper';
 
 @Injectable()
 export class VisitsService {
@@ -26,20 +27,20 @@ export class VisitsService {
         })) as Prisma.InputJsonValue;
     }
 
-    public async signVisitPhotos<T extends { photos: string[] }>(visit: T): Promise<T> {
-        return {
-            ...visit,
-            photos: await this.storage.generateSignedUrls(
-                visit.photos ?? [],
-            ),
-        };
-    }
+    // public async signVisitPhotos<T extends { photos: string[] }>(visit: T): Promise<T> {
+    //     return {
+    //         ...visit,
+    //         photos: await this.storage.generateSignedUrls(
+    //             visit.photos ?? [],
+    //         ),
+    //     };
+    // }
 
-    public async signVisitsPhotos<T extends { photos: string[] }>(visits: T[]): Promise<T[]> {
-        return Promise.all(
-            visits.map((visit) => this.signVisitPhotos(visit)),
-        );
-    }   
+    // public async signVisitsPhotos<T extends { photos: string[] }>(visits: T[]): Promise<T[]> {
+    //     return Promise.all(
+    //         visits.map((visit) => this.signVisitPhotos(visit)),
+    //     );
+    // }   
     
     async create(
         currentUserId: string,
@@ -168,8 +169,10 @@ export class VisitsService {
             throw new NotFoundException('Visit not found');
         }
 
-
-        return this.signVisitPhotos(toVisitResponse(visit));
+        return signVisitResponse(
+            this.storage,
+            toVisitResponse(visit),
+        );
     }
 
     async update(userId: string, visitId: string, dto: UpdateVisitDto) {

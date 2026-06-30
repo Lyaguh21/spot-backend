@@ -11,6 +11,8 @@ import { GetUserVisitsDto } from "./dto/get-user-visits.dto";
 import { PaginationDto } from "./dto/pagination.dto";
 import { toPlacesWithVisitsResponse } from "src/visits/visit-response.mapper";
 import { CreateBugReportDto } from "./dto/create-bug-report.dto";
+import { signAvatar, signPhotos } from "src/storage/storage-sign.helper";
+import { StorageService } from "src/storage/storage.service";
 
 @Injectable()
 export class UsersService {
@@ -18,6 +20,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly storage: StorageService,
   ) {}
 
   private getAccessSecret() {
@@ -146,34 +149,31 @@ export class UsersService {
       throw new NotFoundException("User not found");
     }
 
+    const signedUser = await signAvatar(this.storage, user);
+
     const couple = user.coupleMembers[0]?.couple;
 
     const partner = couple?.members
       .map((m) => m.user)
       .find((u) => u.id !== user.id);
 
+      const signedPartner = partner
+    ? await signAvatar(this.storage, partner)
+    : null;
+
     const stats = await this.getUserStats(user.id);
 
     return {
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      bio: user.bio,
-      visibility: user.visibility,
-
+      signedUser,
       coupleId: couple?.id ?? null,
-
-      partner: partner
+      partner: signedPartner
         ? {
-            id: partner.id,
-            username: partner.username,
-            name: partner.name,
-            avatarUrl: partner.avatarUrl,
+            id: signedPartner.id,
+            username: signedPartner.username,
+            name: signedPartner.name,
+            avatarUrl: signedPartner.avatarUrl,
           }
         : null,
-
       stats,
     };
   }
@@ -186,10 +186,6 @@ export class UsersService {
       data: dto,
       select: this.userProfileSelect,
     });
-
-    //  if (dto.username) {
-    //    проверить уникальность
-    //  }
   }
 
   async findByUsername(username: string, accessToken?: string) {
@@ -247,31 +243,30 @@ export class UsersService {
       isFollowing = Boolean(existing);
     }
 
+    const signedUser = await signAvatar(this.storage, user);
+
     const couple = user.coupleMembers[0]?.couple;
 
     const partner = couple?.members
       .map((m) => m.user)
       .find((u) => u.id !== user.id);
 
+    const signedPartner = partner
+      ? await signAvatar(this.storage, partner)
+      : null;
+
     const stats = await this.getUserStats(user.id);
 
     return {
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      bio: user.bio,
-      visibility: user.visibility,
-
+      signedUser,
       coupleId: couple?.id ?? null,
 
-      partner: partner
+      partner: signedPartner
         ? {
-            id: partner.id,
-            username: partner.username,
-            name: partner.name,
-            avatarUrl: partner.avatarUrl,
+            id: signedPartner.id,
+            username: signedPartner.username,
+            name: signedPartner.name,
+            avatarUrl: signedPartner.avatarUrl,
           }
         : null,
       stats,
@@ -329,7 +324,17 @@ export class UsersService {
       },
     });
 
-    return toPlacesWithVisitsResponse(visits);
+    const response = toPlacesWithVisitsResponse(visits);
+
+    for (const place of response.map) {
+      place.visits = await Promise.all(
+        place.visits.map((visit) =>
+          signPhotos(this.storage, visit),
+        ),
+      );
+    }
+
+    return response;
   }
 
   async getUserPlaces(username: string, query: GetUserVisitsDto) {
@@ -630,7 +635,7 @@ export class UsersService {
     })
 
     return {
-      items: followers.map((item) => item.follower),
+      items: await Promise.all(followers.map((item) => signAvatar(this.storage, item.follower))),
       total,
       page: query.page,
       limit: query.limit,
@@ -804,8 +809,10 @@ export class UsersService {
       where,
     });
 
+    const items = await Promise.all(users.map((user) => signAvatar(this.storage, user)));
+
     return {
-      items: users,
+      items,
       total,
       page: query.page,
       limit: query.limit,
@@ -813,7 +820,7 @@ export class UsersService {
   }
 
   async createBugReport(userId: string, dto: CreateBugReportDto) {
-    return this.prisma.bugReport.create({
+    const report = await this.prisma.bugReport.create({
       data: {
         userId,
         title: dto.title,
@@ -822,6 +829,8 @@ export class UsersService {
         photos: dto.photos ?? [],
       },
     });
+
+    return signPhotos(this.storage, report);
   }
 }
 
