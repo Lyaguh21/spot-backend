@@ -253,4 +253,55 @@ export class AdminService {
             message: 'User restored',
         };
     }
+
+    async banUser(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: { id: true, isBanned: true },
+        });
+    
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+    
+        if (user.isBanned) {
+            throw new BadRequestException('User already banned');
+        }
+    
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                isBanned: true,
+                tokenVersion: {
+                    increment: 1,
+                },
+            },
+        });
+    
+        return { message: 'User banned' };
+    }
+
+    async unbanUser(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: { id: true, isBanned: true },
+        });
+    
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+    
+        if (!user.isBanned) {
+            throw new BadRequestException('User is not banned');
+        }
+    
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                isBanned: false,
+            },
+        });
+    
+        return { message: 'User unbanned' };
+}
 }

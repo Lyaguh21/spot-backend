@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, Patch, SetMetadata, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, SetMetadata, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { UserRole } from '@prisma/client';
@@ -42,6 +42,22 @@ export class AdminController {
       @Param('id') id: string,
    ) {
       return this.admin.restoreUser(id);
+   }
+
+   @Patch('users/:id/ban')
+   @ApiOperation({ summary: 'Забанить пользователя' })
+   banUser(
+      @Param('id') id: string,
+   ) {
+      return this.admin.banUser(id);
+   }
+
+   @Patch('users/:id/unban')
+   @ApiOperation({ summary: 'Разбанить пользователя' })
+   unbanUser(
+      @Param('id') id: string,
+   ) {
+      return this.admin.unbanUser(id);
    }
 
    @ApiOperation({ summary: 'Получить статистику пар' })
