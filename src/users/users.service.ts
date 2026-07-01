@@ -224,6 +224,7 @@ export class UsersService {
         avatarUrl: true,
         bio: true,
         visibility: true,
+        isBanned: true,
 
         coupleMembers: {
           select: {
