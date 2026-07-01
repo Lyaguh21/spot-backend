@@ -1,5 +1,5 @@
 {
-  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"],
   "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
@@ -11,6 +11,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "jsx": "react-jsx",
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
