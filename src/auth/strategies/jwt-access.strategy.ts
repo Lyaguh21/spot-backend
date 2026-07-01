@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -42,11 +42,23 @@ export class JwtAccessStrategy extends PassportStrategy(
         username: true,
         name: true,
         tokenVersion: true,
+        isBanned: true,
+        isDeleted: true,
       },
     });
 
+    if (!user || user.isDeleted) {
+      throw new UnauthorizedException();
+    }
+
     if (!user || user.tokenVersion !== payload.tokenVersion) {
       throw new UnauthorizedException('Token expired');
+    }
+
+    if (user.isBanned) {
+      throw new ForbiddenException({
+        code: 'USER_BANNED',
+      });
     }
 
     return {

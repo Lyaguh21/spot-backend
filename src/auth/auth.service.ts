@@ -268,12 +268,25 @@ export class AuthService {
         avatarUrl: true,
         role: true,
         isEmailVerified: true,
+        isBanned: true,
+        isDeleted: true,
         passwordHash: true,
         tokenVersion: true,
       },
     });
 
     if (!user) throw new BadRequestException('Пользователь не найден');
+
+    if (user.isBanned) {
+      throw new ForbiddenException({
+        code: 'USER_BANNED',
+        message: 'User is banned'
+      });
+    }
+
+    if (user.isDeleted) {
+      throw new ForbiddenException('Пользователь удалён');
+    }
 
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new BadRequestException('Неверный пароль');

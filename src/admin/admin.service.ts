@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { signAvatar } from 'src/storage/storage-sign.helper';
 import { StorageService } from 'src/storage/storage.service';
@@ -38,6 +38,7 @@ export class AdminService {
                 name: true,
                 avatarUrl: true,
                 createdAt: true,
+                isDeleted: true,
             },
         });
 
@@ -189,5 +190,118 @@ export class AdminService {
         return {
             message: 'Bug report deleted successfully',
         };
+    }
+
+    async deleteUser(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                isDeleted: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (user.isDeleted) {
+            throw new BadRequestException('User already deleted');
+        }
+
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                isDeleted: true,
+                hashedRefreshToken: null,
+                tokenVersion: {
+                    increment: 1,
+                },
+            },
+        });
+
+        return {
+            message: 'User deleted',
+        };
+    }
+
+    async restoreUser(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                isDeleted: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (!user.isDeleted) {
+            throw new BadRequestException('User is not deleted');
+        }
+
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                isDeleted: false,
+            },
+        });
+
+        return {
+            message: 'User restored',
+        };
+    }
+
+    async banUser(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: { id: true, isBanned: true },
+        });
+    
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+    
+        if (user.isBanned) {
+            throw new BadRequestException('User already banned');
+        }
+    
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                isBanned: true,
+                tokenVersion: {
+                    increment: 1,
+                },
+            },
+        });
+    
+        return { message: 'User banned' };
+    }
+
+    async unbanUser(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: { id: true, isBanned: true },
+        });
+    
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+    
+        if (!user.isBanned) {
+            throw new BadRequestException('User is not banned');
+        }
+    
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                isBanned: false,
+            },
+        });
+    
+        return { message: 'User unbanned' };
 }
 }
