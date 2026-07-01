@@ -45,8 +45,8 @@ export default function Email({
                 Спасибо, что выбрали SPOT.
               </Text>
               <Text className="mx-auto mt-7 max-w-[460px] text-[17px] leading-[28px] text-[#A9B5CC]">
-                Для подтверждения вашей почты введите код ниже в приложении. Код
-                действителен в течение{" "}
+                Если кода нет, проверьте папку «Спам» или нажмите «Отправить код
+                повторно». Код действителен в течение
                 <span className="mx-auto font-bold max-w-[460px] text-[17px] leading-[28px] text-[#B276FF] mb-8">
                   10 минут
                 </span>
