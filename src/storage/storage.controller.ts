@@ -39,13 +39,19 @@ export class StorageController {
   })
   @ApiOkResponse({
     schema: {
-      oneOf: [
-        { type: "string" },
-        {
-          type: "array",
-          items: { type: "string" },
+      type: "object",
+      properties: {
+        data: {
+          oneOf: [
+            { type: "string" },
+            {
+              type: "array",
+              items: { type: "string" },
+            },
+          ],
         },
-      ],
+      },
+      required: ["data"],
     },
   })
   @Post("upload")
@@ -55,6 +61,16 @@ export class StorageController {
       throw new BadRequestException("File is required");
     }
 
-    return await this.storageService.uploadFiles(files);
+    const uploaded = await this.storageService.uploadFiles(files);
+
+    if (Array.isArray(uploaded)) {
+      return {
+        data: uploaded.map((file) => file.signedUrl),
+      };
+    }
+
+    return {
+      data: uploaded.signedUrl,
+    };
   }
 }

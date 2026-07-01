@@ -132,8 +132,10 @@ export class AdminService {
             );
         }
 
-        return filteredCouples.map((couple) => {
-            const members = couple.members.map((m) => m.user);
+        return Promise.all(filteredCouples.map(async (couple) => {
+            const members = await Promise.all(
+                couple.members.map((m) => signAvatar(this.storage, m.user)),
+            );
 
             return {
                 id: couple.id,
@@ -141,11 +143,11 @@ export class AdminService {
                 members,
                 places: placesByCoupleId.get(couple.id) ?? 0,
             };
-        });
+        }));
     }
 
     async getBugReports() {
-        return this.prisma.bugReport.findMany({
+        const reports = await this.prisma.bugReport.findMany({
             include: {
                 user: {
                     select: {
@@ -160,6 +162,14 @@ export class AdminService {
                 createdAt: 'desc',
             },
         });
+
+        return Promise.all(
+            reports.map(async (report) => ({
+                ...report,
+                photos: await this.storage.signUrls(report.photos ?? []),
+                user: await signAvatar(this.storage, report.user),
+            })),
+        );
     }
 
     async deleteBugReport(id: string) {
@@ -170,6 +180,8 @@ export class AdminService {
         if (!report) {
             throw new NotFoundException('Bug report not found');
         }
+
+        await this.storage.deleteFiles(report.photos ?? []);
 
         await this.prisma.bugReport.delete({
             where: { id },

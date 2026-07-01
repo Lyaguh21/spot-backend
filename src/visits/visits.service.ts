@@ -132,7 +132,7 @@ export class VisitsService {
                 description: dto.description,
                 ratings: this.toRatingsJson(dto.ratings) ?? [],
                 isFavorite: dto.isFavorite ?? false,
-                photos: dto.photos,
+                photos: this.storage.normalizeUrlsForPersistence(dto.photos),
                 icon: dto.icon,
                 color: dto.color,
                 status: dto.status,
@@ -144,7 +144,10 @@ export class VisitsService {
             },
         });
 
-        return toVisitResponse(visit);
+        return signVisitResponse(
+            this.storage,
+            toVisitResponse(visit),
+        );
     }
 
     async findOne(id: string) {
@@ -197,7 +200,10 @@ export class VisitsService {
                 description: dto.description,
                 ratings: this.toRatingsJson(dto.ratings),
                 isFavorite: dto.isFavorite,
-                photos: dto.photos,
+                photos:
+                    dto.photos === undefined
+                        ? undefined
+                        : this.storage.normalizeUrlsForPersistence(dto.photos),
                 icon: dto.icon,
                 color: dto.color,
                 status: dto.status,
@@ -208,7 +214,10 @@ export class VisitsService {
             },
         });
 
-        return toVisitResponse(updatedVisit);
+        return signVisitResponse(
+            this.storage,
+            toVisitResponse(updatedVisit),
+        );
     }
 
     async delete(userId: string, visitId: string) {

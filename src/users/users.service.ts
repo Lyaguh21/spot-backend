@@ -11,7 +11,11 @@ import { GetUserVisitsDto } from "./dto/get-user-visits.dto";
 import { PaginationDto } from "./dto/pagination.dto";
 import { toPlacesWithVisitsResponse } from "src/visits/visit-response.mapper";
 import { CreateBugReportDto } from "./dto/create-bug-report.dto";
-import { signAvatar, signPhotos } from "src/storage/storage-sign.helper";
+import {
+  signAvatar,
+  signPhotos,
+  signPlacesWithVisitsResponse,
+} from "src/storage/storage-sign.helper";
 import { StorageService } from "src/storage/storage.service";
 
 @Injectable()
@@ -65,10 +69,12 @@ export class UsersService {
     createdAt: true,
   } as const;
 
-  getAll() {
-    return this.prisma.user.findMany({
+  async getAll() {
+    const users = await this.prisma.user.findMany({
       select: this.userProfileSelect,
     });
+
+    return Promise.all(users.map((user) => signAvatar(this.storage, user)));
   }
 
   private async getUserStats(userId: string) {
@@ -181,13 +187,26 @@ export class UsersService {
   }
 
   async updateMe(userId: string, dto: UpdateUserDto) {
-    return this.prisma.user.update({
+    const data = {
+      ...dto,
+      ...(dto.avatarUrl !== undefined
+        ? {
+            avatarUrl: dto.avatarUrl
+              ? this.storage.normalizeUrlForPersistence(dto.avatarUrl)
+              : null,
+          }
+        : {}),
+    };
+
+    const user = await this.prisma.user.update({
       where: {
         id: userId,
       },
-      data: dto,
+      data,
       select: this.userProfileSelect,
     });
+
+    return signAvatar(this.storage, user);
   }
 
   async findByUsername(username: string, accessToken?: string) {
@@ -297,7 +316,7 @@ export class UsersService {
       throw new NotFoundException("User not found");
     }
 
-    return {
+    return signAvatar(this.storage, {
       id: user.id,
       username: user.username,
       name: user.name,
@@ -305,7 +324,7 @@ export class UsersService {
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       visibility: user.visibility,
-    };
+    });
   }
 
   async getUserVisits(username: string, query: GetUserVisitsDto) {
@@ -332,17 +351,10 @@ export class UsersService {
       },
     });
 
-    const response = toPlacesWithVisitsResponse(visits);
-
-    for (const place of response.map) {
-      place.visits = await Promise.all(
-        place.visits.map((visit) =>
-          signPhotos(this.storage, visit),
-        ),
-      );
-    }
-
-    return response;
+    return signPlacesWithVisitsResponse(
+      this.storage,
+      toPlacesWithVisitsResponse(visits),
+    );
   }
 
   async getUserPlaces(username: string, query: GetUserVisitsDto) {
@@ -369,7 +381,10 @@ export class UsersService {
       },
     });
 
-    return toPlacesWithVisitsResponse(visits);
+    return signPlacesWithVisitsResponse(
+      this.storage,
+      toPlacesWithVisitsResponse(visits),
+    );
   }
 
   async getMyFollowingVisits(currentUserId: string) {
@@ -448,7 +463,10 @@ export class UsersService {
       },
     });
 
-    return toPlacesWithVisitsResponse(visits);
+    return signPlacesWithVisitsResponse(
+      this.storage,
+      toPlacesWithVisitsResponse(visits),
+    );
   }
 
   async follow(
@@ -762,16 +780,29 @@ export class UsersService {
       }),
     ]);
 
+    const signedCouples = await Promise.all(
+      couples.map(async (item) => ({
+        type: 'COUPLE',
+        ...item.targetCouple,
+        members: await Promise.all(
+          item.targetCouple.members.map(async (member) => ({
+            ...member,
+            user: await signAvatar(this.storage, member.user),
+          })),
+        ),
+      })),
+    );
+    const signedUsers = await Promise.all(
+      users.map(async (item) => ({
+        type: 'USER',
+        ...(await signAvatar(this.storage, item.targetUser)),
+      })),
+    );
+
     return {
       items: [
-        ...couples.map(item => ({
-          type: 'COUPLE',
-          ...item.targetCouple,
-        })),
-        ...users.map(item => ({
-          type: 'USER',
-          ...item.targetUser,
-        })),
+        ...signedCouples,
+        ...signedUsers,
       ],
       total: totalUsers + totalCouples,
       page: query.page,
@@ -837,7 +868,7 @@ export class UsersService {
         title: dto.title,
         description: dto.description,
         type: dto.type,
-        photos: dto.photos ?? [],
+        photos: this.storage.normalizeUrlsForPersistence(dto.photos),
       },
     });
 
