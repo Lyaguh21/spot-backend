@@ -1,0 +1,66 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          FRONTEND_REPO_URL: ${{ secrets.FRONTEND_REPO_URL || 'https://github.com/Lyaguh21/spot-frontend.git' }}
+          BACKEND_REPO_URL: https://github.com/${{ github.repository }}.git
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          envs: FRONTEND_REPO_URL,BACKEND_REPO_URL
+          script: |
+            set -euo pipefail
+
+            APP_DIR=/opt/spot
+            FRONTEND_DIR="$APP_DIR/spot-frontend"
+            BACKEND_DIR="$APP_DIR/spot-backend"
+            ENV_FILE="$APP_DIR/.env"
+
+            if [ ! -f "$ENV_FILE" ]; then
+              echo "Missing $ENV_FILE. Create it before deploying."
+              exit 1
+            fi
+
+            mkdir -p "$APP_DIR"
+
+            if [ ! -d "$FRONTEND_DIR/.git" ]; then
+              git clone "$FRONTEND_REPO_URL" "$FRONTEND_DIR"
+            fi
+
+            if [ ! -d "$BACKEND_DIR/.git" ]; then
+              git clone "$BACKEND_REPO_URL" "$BACKEND_DIR"
+            fi
+
+            git config --global --add safe.directory "$FRONTEND_DIR"
+            git config --global --add safe.directory "$BACKEND_DIR"
+
+            cd "$FRONTEND_DIR"
+            git fetch origin main
+            git reset --hard origin/main
+
+            cd "$BACKEND_DIR"
+            git fetch origin main
+            git reset --hard origin/main
+
+            export BACKEND_DIR
+            export APP_ENV_FILE="$ENV_FILE"
+
+            cd "$FRONTEND_DIR"
+            docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml build frontend backend migrate
+            docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml up -d postgres
+            docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml --profile migrate run --rm --build migrate
+            docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml up -d --remove-orphans frontend backend
+            docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml ps
