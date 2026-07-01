@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, SetMetadata, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Patch, SetMetadata, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { UserRole } from '@prisma/client';
@@ -26,6 +26,22 @@ export class AdminController {
    @Get('users')
    getUsers() {
       return this.admin.getUsersStats();
+   }
+
+   @Delete('users/:id')
+   @ApiOperation({ summary: 'Удалить пользователя' })
+   deleteUser(
+      @Param('id') id: string,
+   ) {
+      return this.admin.deleteUser(id);
+   }
+
+   @Patch('users/:id/restore')
+   @ApiOperation({ summary: 'Восстановить пользователя' })
+   restoreUser(
+      @Param('id') id: string,
+   ) {
+      return this.admin.restoreUser(id);
    }
 
    @ApiOperation({ summary: 'Получить статистику пар' })

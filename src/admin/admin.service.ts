@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { signAvatar } from 'src/storage/storage-sign.helper';
+import { StorageService } from 'src/storage/storage.service';
 
 @Injectable()
 export class AdminService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly storage: StorageService,
+    ) {}
 
     async stats() {
         const users = this.prisma.user.count();
@@ -33,6 +38,7 @@ export class AdminService {
                 name: true,
                 avatarUrl: true,
                 createdAt: true,
+                isDeleted: true,
             },
         });
 
@@ -68,10 +74,12 @@ export class AdminService {
             );
         }
 
-        return users.map((user) => ({
-            ...user,
-            places: placesByUserId.get(user.id) ?? 0,
-        }));
+        return Promise.all(
+            users.map(async (user) => ({
+                ...(await signAvatar(this.storage, user)),
+                places: placesByUserId.get(user.id) ?? 0,
+            })),
+        );
     }
 
     async getCoupleStats() {
@@ -170,5 +178,67 @@ export class AdminService {
         return {
             message: 'Bug report deleted successfully',
         };
-}
+    }
+
+    async deleteUser(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                isDeleted: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (user.isDeleted) {
+            throw new BadRequestException('User already deleted');
+        }
+
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                isDeleted: true,
+                hashedRefreshToken: null,
+                tokenVersion: {
+                    increment: 1,
+                },
+            },
+        });
+
+        return {
+            message: 'User deleted',
+        };
+    }
+
+    async restoreUser(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                isDeleted: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (!user.isDeleted) {
+            throw new BadRequestException('User is not deleted');
+        }
+
+        await this.prisma.user.update({
+            where: { id },
+            data: {
+                isDeleted: false,
+            },
+        });
+
+        return {
+            message: 'User restored',
+        };
+    }
 }

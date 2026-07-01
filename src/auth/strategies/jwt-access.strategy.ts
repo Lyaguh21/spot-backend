@@ -42,8 +42,13 @@ export class JwtAccessStrategy extends PassportStrategy(
         username: true,
         name: true,
         tokenVersion: true,
+        isDeleted: true,
       },
     });
+
+    if (!user || user.isDeleted) {
+      throw new UnauthorizedException();
+    }
 
     if (!user || user.tokenVersion !== payload.tokenVersion) {
       throw new UnauthorizedException('Token expired');

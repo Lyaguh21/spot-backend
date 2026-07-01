@@ -192,7 +192,10 @@ export class UsersService {
 
   async findByUsername(username: string, accessToken?: string) {
     const user = await this.prisma.user.findUnique({
-      where: { username },
+      where: { 
+        username,
+        isDeleted: false,
+      },
       select: {
         id: true,
         username: true,
@@ -309,6 +312,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({
       where: {
         username,
+        isDeleted: false,
       },
     });
 
@@ -345,6 +349,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({
       where: {
         username,
+        isDeleted: false,
       },
     });
 
@@ -776,6 +781,8 @@ export class UsersService {
 
   async searchUsers(query: PaginationDto) {
     const where = {
+      isDeleted: false,
+
       ...(query.search && {
         OR: [
           {

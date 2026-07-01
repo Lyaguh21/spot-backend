@@ -259,12 +259,17 @@ export class AuthService {
         name: true,
         role: true,
         isEmailVerified: true,
+        isDeleted: true,
         passwordHash: true,
         tokenVersion: true,
       },
     });
 
     if (!user) throw new BadRequestException('Пользователь не найден');
+
+    if (user.isDeleted) {
+      throw new ForbiddenException('Пользователь удалён');
+    }
 
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new BadRequestException('Неверный пароль');
