@@ -15,12 +15,15 @@ import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { EmailService } from 'src/email/email.service';
 import { ResendEmailCodeDto } from './dto/resend-verification-code.dto';
+import { signAvatar } from 'src/storage/storage-sign.helper';
+import { StorageService } from 'src/storage/storage.service';
 
 type AuthStatusUser = {
   id: string;
   email: string;
   username: string;
   name: string;
+  avatarUrl: string | null;
   role: string;
   isEmailVerified: boolean;
   coupleId: string | null;
@@ -40,6 +43,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly email: EmailService,
+    private readonly storage: StorageService,
   ) {}
 
   private getAccessSecret() {
@@ -86,6 +90,7 @@ export class AuthService {
         email: true,
         username: true,
         name: true,
+        avatarUrl: true,
         role: true,
         isEmailVerified: true,
         tokenVersion: true,
@@ -115,11 +120,14 @@ export class AuthService {
       tokens.refreshToken,
     );
 
-    const safeUser = { 
+    const safeUser = {
       id: user.id, 
       email: user.email,
       username: user.username,
       name: user.name,
+      avatarUrl: user.avatarUrl,
+      coupleId: null,
+      partner: null,
       role: user.role,
       isEmailVerified: user.isEmailVerified
     };
@@ -257,6 +265,7 @@ export class AuthService {
         email: true,
         username: true,
         name: true,
+        avatarUrl: true,
         role: true,
         isEmailVerified: true,
         passwordHash: true,
@@ -269,11 +278,15 @@ export class AuthService {
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new BadRequestException('Неверный пароль');
 
-    const safeUser = { 
+    const signedUser = await signAvatar(this.storage, user);
+    const safeUser = {
       id: user.id, 
       email: user.email,
       username: user.username,
       name: user.name,
+      avatarUrl: signedUser.avatarUrl,
+      coupleId: null,
+      partner: null,
       role: user.role,
       isEmailVerified: user.isEmailVerified
     };
@@ -301,6 +314,7 @@ export class AuthService {
         email: true,
         username: true,
         name: true,
+        avatarUrl: true,
         role: true,
         isEmailVerified: true,
         coupleMembers: {
@@ -338,16 +352,21 @@ export class AuthService {
     const partner = couple?.members
       .map(member => member.user)
       .find(partner => partner.id !== user.id) ?? null;
+    const signedUser = await signAvatar(this.storage, user);
+    const signedPartner = partner
+      ? await signAvatar(this.storage, partner)
+      : null;
 
     return {
       id: user.id,
       email: user.email,
       username: user.username,
       name: user.name,
+      avatarUrl: signedUser.avatarUrl ?? null,
       role: user.role,
       isEmailVerified: user.isEmailVerified,
       coupleId: user.coupleMembers[0]?.coupleId ?? null,
-      partner
+      partner: signedPartner,
     };
   }
 

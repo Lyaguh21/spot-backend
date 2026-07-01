@@ -32,12 +32,37 @@ export async function signVisitResponse(
 
     if (result.couple?.members?.length) {
         result.couple.members = await Promise.all(
-            result.couple.members.map(async (member: any) => ({
-                ...member,
-                user: await signAvatar(storage, member.user),
-            })),
+            result.couple.members.map(async (member: any) =>
+                member.user
+                    ? {
+                        ...member,
+                        user: await signAvatar(storage, member.user),
+                    }
+                    : signAvatar(storage, member),
+            ),
         );
     }
 
     return result;
+}
+
+export async function signPlacesWithVisitsResponse<
+    T extends { map: { visits: any[] }[] },
+>(
+    storage: StorageService,
+    response: T,
+): Promise<T> {
+    return {
+        ...response,
+        map: await Promise.all(
+            response.map.map(async (place) => ({
+                ...place,
+                visits: await Promise.all(
+                    place.visits.map((visit) =>
+                        signVisitResponse(storage, visit),
+                    ),
+                ),
+            })),
+        ),
+    };
 }
