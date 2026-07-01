@@ -26,6 +26,7 @@ type AuthStatusUser = {
   avatarUrl: string | null;
   role: string;
   isEmailVerified: boolean;
+  isBanned: boolean;
   coupleId: string | null;
   partner: {
     id: string;
@@ -330,6 +331,7 @@ export class AuthService {
         avatarUrl: true,
         role: true,
         isEmailVerified: true,
+        isBanned: true,
         coupleMembers: {
           select: {
             coupleId: true,
@@ -378,6 +380,7 @@ export class AuthService {
       avatarUrl: signedUser.avatarUrl ?? null,
       role: user.role,
       isEmailVerified: user.isEmailVerified,
+      isBanned: user.isBanned,
       coupleId: user.coupleMembers[0]?.coupleId ?? null,
       partner: signedPartner,
     };

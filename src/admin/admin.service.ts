@@ -38,6 +38,7 @@ export class AdminService {
                 name: true,
                 avatarUrl: true,
                 createdAt: true,
+                isBanned: true,
                 isDeleted: true,
             },
         });

@@ -19,7 +19,6 @@ import type { AuthUser, AuthUserWithRefresh } from './types/auth-user.type';
 import { ApiCookieAuth, ApiTags, ApiBody, ApiOkResponse } from '@nestjs/swagger';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { Public } from './decorators/public.decorator';
-import { Throttle } from '@nestjs/throttler';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { EmailService } from 'src/email/email.service';
@@ -32,7 +31,6 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly config: ConfigService,
-    private readonly email: EmailService,
   ) {}
 
   private cookieSecure() {

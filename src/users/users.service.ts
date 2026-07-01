@@ -126,6 +126,7 @@ export class UsersService {
         avatarUrl: true,
         bio: true,
         visibility: true,
+        isBanned: true,
 
         coupleMembers: {
           select: {
@@ -324,6 +325,7 @@ export class UsersService {
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       visibility: user.visibility,
+      isBanned: user.isBanned,
     });
   }
 
