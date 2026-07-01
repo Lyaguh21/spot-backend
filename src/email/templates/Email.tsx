@@ -27,8 +27,8 @@ export default function Email({
       <Html>
         <Head />
         <Preview>Код подтверждения SPOT: {normalizedCode}</Preview>
-        <Body className="m-0 bg-[#050B18] px-2 sm:px-4 py-8 font-sans">
-          <Container className="mx-auto max-w-[640px] rounded-[22px] border border-[#1F3158] bg-[#071326] px-2 md:px-6 py-10 shadow-[0_0_48px_rgba(126,69,255,0.25)]">
+        <Body className="m-0 bg-[#050B18] dark:bg-[#050B18] px-2 sm:px-4 py-8 font-sans">
+          <Container className="mx-auto max-w-[640px] rounded-[22px] border border-[#1F3158] bg-[#071326] dark:bg-[#071326] px-2 md:px-6 py-10 shadow-[0_0_48px_rgba(126,69,255,0.25)]">
             <Section className="text-center">
               <Img
                 src={logoSrc}
@@ -67,10 +67,10 @@ export default function Email({
                         key={`${symbol}-${index}`}
                         width="16.66%"
                         align="center"
-                        className="px-[2px] sm:px-2 "
+                        className="px-[2px] sm:px-2"
                       >
-                        <div className="aspect-square rounded-[10px] flex justify-center items-center border border-[#24385F] bg-[#0E1A30] text-[40px] font-medium leading-none text-[#B276FF] shadow-[inset_0_1px_10px_rgba(255,255,255,0.05)]">
-                          <p className="my-auto ">{symbol}</p>
+                        <div className="aspect-square rounded-[10px] border border-[#24385F] bg-[#0E1A30] text-[40px] font-medium leading-none text-[#B276FF] shadow-[inset_0_1px_10px_rgba(255,255,255,0.05)] flex justify-center items-center">
+                          <p className="my-auto mx-auto">{symbol}</p>
                         </div>
                       </td>
                     ))}
