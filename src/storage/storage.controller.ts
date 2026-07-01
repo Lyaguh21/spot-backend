@@ -65,12 +65,12 @@ export class StorageController {
 
     if (Array.isArray(uploaded)) {
       return {
-        data: uploaded.map((file) => file.signedUrl),
+        data: uploaded,
       };
     }
 
     return {
-      data: uploaded.signedUrl,
+      data: uploaded,
     };
   }
 }

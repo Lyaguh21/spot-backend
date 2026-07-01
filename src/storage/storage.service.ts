@@ -149,8 +149,9 @@ export class StorageService {
 
   private buildStorageUrl(key: string): string {
     const endpoint = process.env.S3_ENDPOINT?.replace(/\/+$/, "");
+    const encodedKey = key.split('/').map(encodeURIComponent).join('/');
 
-    return `${endpoint}/${process.env.S3_BUCKET}/${key}`;
+    return `${endpoint}/${process.env.S3_BUCKET}/${encodedKey}`;
   }
 
   private getStorageUrlPrefixes(): string[] {
@@ -176,7 +177,7 @@ export class StorageService {
 
     for (const prefix of this.getStorageUrlPrefixes()) {
       if (normalizedUrl.startsWith(prefix)) {
-        return normalizedUrl.substring(prefix.length);
+        return this.decodeStorageKey(normalizedUrl.substring(prefix.length));
       }
     }
 
@@ -187,7 +188,15 @@ export class StorageService {
       return null;
     }
 
-    return normalizedUrl.substring(index + marker.length);
+    return this.decodeStorageKey(normalizedUrl.substring(index + marker.length));
+  }
+
+  private decodeStorageKey(key: string): string {
+    try {
+      return decodeURIComponent(key);
+    } catch {
+      return key;
+    }
   }
 
   private getKeyFromUrl(url: string): string {

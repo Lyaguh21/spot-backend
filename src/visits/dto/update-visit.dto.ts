@@ -36,6 +36,11 @@ export class UpdateVisitDto {
     @IsString()
     description?: string;
 
+    @ApiPropertyOptional({ example: 'Moscow, Krymsky Val, 9' })
+    @IsOptional()
+    @IsString()
+    address?: string;
+
     @ApiPropertyOptional({
         type: [UpdateVisitRatingDto],
         example: [

@@ -28,7 +28,7 @@ describe("StorageController", () => {
     expect(controller).toBeDefined();
   });
 
-  it("returns only signed url data for a single uploaded file", async () => {
+  it("returns persistent and signed url data for a single uploaded file", async () => {
     const files = [createFile("1.jpg")];
     const uploaded = {
       url: "https://storage/1.jpg",
@@ -40,12 +40,12 @@ describe("StorageController", () => {
       .mockResolvedValue(uploaded);
 
     await expect(controller.uploadFile(files)).resolves.toEqual({
-      data: "https://storage/1.jpg?signed=1",
+      data: uploaded,
     });
     expect(storageService.uploadFiles).toHaveBeenCalledWith(files);
   });
 
-  it("returns only signed url data for multiple uploaded files", async () => {
+  it("returns persistent and signed url data for multiple uploaded files", async () => {
     const files = [createFile("1.jpg"), createFile("2.jpg")];
     const urls = [
       {
@@ -61,10 +61,7 @@ describe("StorageController", () => {
     jest.mocked(storageService.uploadFiles).mockResolvedValue(urls);
 
     await expect(controller.uploadFile(files)).resolves.toEqual({
-      data: [
-        "https://storage/1.jpg?signed=1",
-        "https://storage/2.jpg?signed=1",
-      ],
+      data: urls,
     });
     expect(storageService.uploadFiles).toHaveBeenCalledWith(files);
   });

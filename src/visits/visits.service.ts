@@ -191,6 +191,17 @@ export class VisitsService {
 
         await this.assertCanManageVisit(userId, visit);
 
+        if (dto.address !== undefined) {
+            await this.prisma.place.update({
+                where: {
+                    id: visit.placeId,
+                },
+                data: {
+                    address: dto.address.trim() || null,
+                },
+            });
+        }
+
         const updatedVisit = await this.prisma.visit.update({
             where: {
                 id: visitId,

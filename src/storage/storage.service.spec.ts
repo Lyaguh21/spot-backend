@@ -59,6 +59,18 @@ describe('StorageService', () => {
     );
   });
 
+  it('encodes uploaded file names in public storage urls', async () => {
+    const result = await service.uploadFile({
+      originalname: 'photo one.jpg',
+      buffer: Buffer.from('file'),
+      mimetype: 'image/jpeg',
+    });
+
+    expect(result.url).toMatch(
+      /^https:\/\/s3\.example\.com\/bucket\/visits\/\d+-[0-9a-f-]+-photo%20one\.jpg$/,
+    );
+  });
+
   it('unwraps legacy upload response strings before using storage urls', () => {
     expect(
       service.normalizeStorageUrl(
@@ -81,6 +93,31 @@ describe('StorageService', () => {
         'https://s3.example.com/bucket/visits/photo.jpg?X-Amz-Signature=123#preview',
       ),
     ).toBe('https://s3.example.com/bucket/visits/photo.jpg');
+  });
+
+  it('normalizes encoded storage urls to canonical encoded urls', () => {
+    expect(
+      service.normalizeUrlForPersistence(
+        'https://s3.example.com/bucket/visits/photo%20one.jpg?X-Amz-Signature=123',
+      ),
+    ).toBe('https://s3.example.com/bucket/visits/photo%20one.jpg');
+  });
+
+  it('signs encoded storage urls using the decoded object key', async () => {
+    await service.signUrl(
+      'https://s3.example.com/bucket/visits/photo%20one.jpg',
+    );
+
+    expect(getSignedUrl).toHaveBeenCalledWith(
+      expect.any(S3Client),
+      expect.objectContaining({
+        input: expect.objectContaining({
+          Bucket: 'bucket',
+          Key: 'visits/photo one.jpg',
+        }),
+      }),
+      { expiresIn: 60 * 60 },
+    );
   });
 
   it('deletes a storage object by normalized url', async () => {

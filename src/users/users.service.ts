@@ -166,9 +166,9 @@ export class UsersService {
       .map((m) => m.user)
       .find((u) => u.id !== user.id);
 
-      const signedPartner = partner
-    ? await signAvatar(this.storage, partner)
-    : null;
+    const signedPartner = partner
+      ? await signAvatar(this.storage, partner)
+      : null;
 
     const stats = await this.getUserStats(user.id);
 
@@ -212,7 +212,7 @@ export class UsersService {
 
   async findByUsername(username: string, accessToken?: string) {
     const user = await this.prisma.user.findUnique({
-      where: { 
+      where: {
         username,
         isDeleted: false,
       },
@@ -630,7 +630,7 @@ export class UsersService {
               username: {
                 contains: query.search,
                 mode: "insensitive" as const,
-              }
+              },
             },
             {
               name: {
@@ -638,10 +638,10 @@ export class UsersService {
                 mode: "insensitive" as const,
               },
             },
-          ]
-        }
-      })
-    }
+          ],
+        },
+      }),
+    };
 
     const followers = await this.prisma.userSubscription.findMany({
       where,
@@ -660,15 +660,17 @@ export class UsersService {
     });
 
     const total = await this.prisma.userSubscription.count({
-      where
-    })
+      where,
+    });
 
     return {
-      items: await Promise.all(followers.map((item) => signAvatar(this.storage, item.follower))),
+      items: await Promise.all(
+        followers.map((item) => signAvatar(this.storage, item.follower)),
+      ),
       total,
       page: query.page,
       limit: query.limit,
-    }
+    };
   }
 
   async getFollowing(username: string, query: PaginationDto) {
@@ -677,7 +679,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     const whereUsers: any = {
@@ -696,13 +698,13 @@ export class UsersService {
           {
             username: {
               contains: q,
-              mode: 'insensitive',
+              mode: "insensitive",
             },
           },
           {
             name: {
               contains: q,
-              mode: 'insensitive',
+              mode: "insensitive",
             },
           },
         ],
@@ -716,13 +718,13 @@ export class UsersService {
                 {
                   username: {
                     contains: q,
-                    mode: 'insensitive',
+                    mode: "insensitive",
                   },
                 },
                 {
                   name: {
                     contains: q,
-                    mode: 'insensitive',
+                    mode: "insensitive",
                   },
                 },
               ],
@@ -784,7 +786,7 @@ export class UsersService {
 
     const signedCouples = await Promise.all(
       couples.map(async (item) => ({
-        type: 'COUPLE',
+        type: "COUPLE",
         ...item.targetCouple,
         members: await Promise.all(
           item.targetCouple.members.map(async (member) => ({
@@ -796,16 +798,13 @@ export class UsersService {
     );
     const signedUsers = await Promise.all(
       users.map(async (item) => ({
-        type: 'USER',
+        type: "USER",
         ...(await signAvatar(this.storage, item.targetUser)),
       })),
     );
 
     return {
-      items: [
-        ...signedCouples,
-        ...signedUsers,
-      ],
+      items: [...signedCouples, ...signedUsers],
       total: totalUsers + totalCouples,
       page: query.page,
       limit: query.limit,
@@ -821,13 +820,13 @@ export class UsersService {
           {
             username: {
               contains: query.search,
-              mode: 'insensitive' as const,
+              mode: "insensitive" as const,
             },
           },
           {
             name: {
               contains: query.search,
-              mode: 'insensitive' as const,
+              mode: "insensitive" as const,
             },
           },
         ],
@@ -845,7 +844,7 @@ export class UsersService {
       skip: (query.page - 1) * query.limit,
       take: query.limit,
       orderBy: {
-        username: 'asc',
+        username: "asc",
       },
     });
 
@@ -853,7 +852,9 @@ export class UsersService {
       where,
     });
 
-    const items = await Promise.all(users.map((user) => signAvatar(this.storage, user)));
+    const items = await Promise.all(
+      users.map((user) => signAvatar(this.storage, user)),
+    );
 
     return {
       items,
@@ -877,4 +878,3 @@ export class UsersService {
     return signPhotos(this.storage, report);
   }
 }
-
