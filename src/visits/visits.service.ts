@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateVisitDto } from './dto/create-visit.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Place, OwnerType, Prisma } from '@prisma/client';
+import { Place, OwnerType, Prisma, UserRole } from '@prisma/client';
 import { UpdateVisitDto } from './dto/update-visit.dto';
 import { toVisitResponse } from './visit-response.mapper';
 import { StorageService } from 'src/storage/storage.service';
@@ -231,7 +231,7 @@ export class VisitsService {
         );
     }
 
-    async delete(userId: string, visitId: string) {
+    async delete(userId: string, visitId: string, userRole?: UserRole) {
         const visit = await this.prisma.visit.findUnique({
             where: {
                 id: visitId,
@@ -240,6 +240,14 @@ export class VisitsService {
 
         if (!visit) {
             throw new NotFoundException('Visit not found');
+        }
+
+        if (userRole === UserRole.ADMIN) {
+            await this.prisma.visit.delete({
+                where: { id: visitId },
+            });
+
+            return { message: 'Visit deleted' };
         }
 
         await this.assertCanManageVisit(userId, visit);

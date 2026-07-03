@@ -11,20 +11,63 @@ export class AdminService {
     ) {}
 
     async stats() {
-        const users = this.prisma.user.count();
-        const couples = this.prisma.couple.count();
-        const places = this.prisma.place.count();
+        const users = this.prisma.user.count({
+            where: {
+                isDeleted: false,
+            },
+        });
+        const couples = this.prisma.couple.findMany({
+            select: {
+                id: true,
+                members: {
+                    select: {
+                        user: {
+                            select: {
+                                id: true,
+                                isDeleted: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
 
-        const [usersCount, couplesCount, placesCount] = await Promise.all([
+        const [usersCount, allCouples] = await Promise.all([
             users,
             couples,
-            places,
         ]);
+        const activeCoupleIds = allCouples
+            .filter((couple) =>
+                couple.members.filter((member) => !member.user.isDeleted)
+                    .length === 2,
+            )
+            .map((couple) => couple.id);
+
+        const places = await this.prisma.visit.findMany({
+            where: {
+                OR: [
+                    {
+                        user: {
+                            isDeleted: false,
+                        },
+                    },
+                    {
+                        coupleId: {
+                            in: activeCoupleIds,
+                        },
+                    },
+                ],
+            },
+            distinct: ['placeId'],
+            select: {
+                placeId: true,
+            },
+        });
 
         return {
             users: usersCount,
-            couples: couplesCount,
-            places: placesCount,
+            couples: activeCoupleIds.length,
+            places: places.length,
         };
     }
 
@@ -89,6 +132,11 @@ export class AdminService {
                 id: true,
                 createdAt: true,
                 members: {
+                    where: {
+                        user: {
+                            isDeleted: false,
+                        },
+                    },
                     select: {
                         user: {
                             select: {
@@ -198,7 +246,6 @@ export class AdminService {
             where: { id },
             select: {
                 id: true,
-                isDeleted: true,
             },
         });
 
@@ -206,20 +253,46 @@ export class AdminService {
             throw new NotFoundException('User not found');
         }
 
-        if (user.isDeleted) {
-            throw new BadRequestException('User already deleted');
-        }
-
-        await this.prisma.user.update({
-            where: { id },
-            data: {
-                isDeleted: true,
-                hashedRefreshToken: null,
-                tokenVersion: {
-                    increment: 1,
+        await this.prisma.$transaction([
+            this.prisma.userSubscription.deleteMany({
+                where: {
+                    followerId: id,
                 },
-            },
-        });
+            }),
+            this.prisma.userSubscription.deleteMany({
+                where: {
+                    targetUserId: id,
+                },
+            }),
+            this.prisma.coupleSubscription.deleteMany({
+                where: {
+                    followerId: id,
+                },
+            }),
+            this.prisma.coupleMember.deleteMany({
+                where: {
+                    userId: id,
+                },
+            }),
+            this.prisma.emailVerificationCode.deleteMany({
+                where: {
+                    userId: id,
+                },
+            }),
+            this.prisma.bugReport.deleteMany({
+                where: {
+                    userId: id,
+                },
+            }),
+            this.prisma.visit.deleteMany({
+                where: {
+                    userId: id,
+                },
+            }),
+            this.prisma.user.delete({
+                where: { id },
+            }),
+        ]);
 
         return {
             message: 'User deleted',

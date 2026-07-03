@@ -6,9 +6,9 @@ import {
     IsBoolean,
     IsDateString,
     IsEnum,
+    Min,
     IsNumber,
     IsOptional,
-    IsPositive,
     IsString,
     Max,
     ValidateNested,
@@ -21,7 +21,7 @@ export class VisitRatingDto {
 
     @ApiProperty({ example: 5, minimum: 0, maximum: 5 })
     @IsNumber()
-    @IsPositive()
+    @Min(0)
     @Max(5)
     rating!: number;
 }

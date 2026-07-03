@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OwnerType, VisitStatus } from '@prisma/client';
+import { OwnerType, UserRole, VisitStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StorageService } from 'src/storage/storage.service';
 import { VisitsService } from './visits.service';
@@ -10,6 +10,7 @@ describe('VisitsService', () => {
     visit: {
       findUnique: jest.Mock;
       update: jest.Mock;
+      delete: jest.Mock;
     };
     place: {
       update: jest.Mock;
@@ -29,6 +30,7 @@ describe('VisitsService', () => {
       visit: {
         findUnique: jest.fn(),
         update: jest.fn(),
+        delete: jest.fn(),
       },
       place: {
         update: jest.fn(),
@@ -121,5 +123,25 @@ describe('VisitsService', () => {
         }),
       }),
     );
+  });
+
+  it('allows admin to delete another user visit', async () => {
+    const visit = {
+      id: 'visit-1',
+      placeId: 'place-1',
+      ownerType: OwnerType.USER,
+      userId: 'user-1',
+      coupleId: null,
+    };
+
+    prisma.visit.findUnique.mockResolvedValue(visit);
+    prisma.visit.delete.mockResolvedValue({});
+
+    await service.delete('admin-1', 'visit-1', UserRole.ADMIN);
+
+    expect(prisma.visit.delete).toHaveBeenCalledWith({
+      where: { id: 'visit-1' },
+    });
+    expect(prisma.coupleMember.findFirst).not.toHaveBeenCalled();
   });
 });

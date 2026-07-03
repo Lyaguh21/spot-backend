@@ -13,6 +13,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { CreateVisitDto } from './dto/create-visit.dto';
 import { UpdateVisitDto } from './dto/update-visit.dto';
 import { VisitsService } from './visits.service';
+import { UserRole } from '@prisma/client';
 
 @ApiTags('visits')
 @ApiBearerAuth('accessToken')
@@ -61,8 +62,9 @@ export class VisitsController {
     @Delete(':id')
     delete(
         @CurrentUser('sub') userId: string,
+        @CurrentUser('role') userRole: UserRole,
         @Param('id') id: string,
     ) {
-        return this.visits.delete(userId, id);
+        return this.visits.delete(userId, id, userRole);
     }
 }
